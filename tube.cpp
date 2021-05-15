@@ -68,43 +68,44 @@ void generation_cercles(std::vector<Point> & points, std::vector<Vector> & ortho
 
 void generation_normales (std::vector<std::vector<Point>> & cercles, std::vector<Vector> & normales){
   Vector v(1,0,0);
-  for(unsigned int i = 0; i < cercles.size(); i++){
-    Vector a0(cercles[i][0],cercles[i][1]);
-    Vector d = normalize(cross(a0,v));
+  Vector a0, a1, last_a0, last_a1;
+  Vector d;
+  unsigned int i, j, size;
+  for(i = 0; i < cercles.size(); i++){
+    a0 = Vector(cercles[i][0],cercles[i][1]);
+    d = normalize(cross(a0,v));
     normales.push_back(d);
-    for(unsigned int j = 0; j < cercles[i].size() - 2; j++){
-      Vector a0(cercles[i][j],cercles[i][j+1]);
-      Vector a1(cercles[i][j+1], cercles[i][j+2]);
+    size = cercles[i].size();
+    for(j = 0; j < size - 2; j++){
+      a0 = Vector(cercles[i][j],cercles[i][j+1]);
+      a1 = Vector(cercles[i][j+1], cercles[i][j+2]);
       d = rotation(a0, a1,d);
-      normales.push_back(d);
+      normales.push_back(rotation(a0, a1, d));
     }
-    Vector aa0(cercles[i][cercles[i].size() - 2],cercles[i][cercles[i].size() - 1]);
-    Vector aa1(cercles[i][cercles[i].size() - 1], cercles[i][0]);
-    d = rotation(aa0, aa1,d);
-    normales.push_back(d);
-
+    last_a0 = Vector(cercles[i][size - 2],cercles[i][size - 1]);
+    last_a1 = Vector(cercles[i][size - 1], cercles[i][0]);
+    d = rotation(last_a0, last_a1, d);
+    normales.push_back(rotation(last_a0, last_a1, d));
   }
 }
 
 
 void dessine_triangles(Mesh& m, std::vector<std::vector<Point>> cercles, std::vector<Vector> norm){
-  for(unsigned int i=0; i < cercles.size()-1; i++){
-    for(unsigned int j = 0; j< cercles[i].size()-1; j++){
-      unsigned n = cercles[i].size();
-      unsigned int a = m.normal(norm[i*cercles[i].size()+j]).vertex(cercles[i][j]);
-      unsigned int b = m.normal(norm[(i+1)*n+j]).vertex(cercles[i+1][j]);
-      unsigned int c = m.normal(norm[(i+1)*n+(j+1)]).vertex(cercles[i+1][j+1]);
-      unsigned int d = m.normal(norm[i*n+(j+1)]).vertex(cercles[i][j+1]);
-
+  unsigned int i, j, n, a, b, c, d, la, lb, lc, ld;
+  for(i = 0; i < cercles.size() - 1; i++){
+    for(j = 0; j < cercles[i].size() - 1; j++){
+      n = cercles[i].size();
+      a = m.normal(norm[i*cercles[i].size()+j]).vertex(cercles[i][j]);
+      b = m.normal(norm[(i+1)*n+j]).vertex(cercles[i+1][j]);
+      c = m.normal(norm[(i+1)*n+(j+1)]).vertex(cercles[i+1][j+1]);
+      d = m.normal(norm[i*n+(j+1)]).vertex(cercles[i][j+1]);
       m.triangle(a,c,b);
       m.triangle(a,d,c);
-
-      if(j == cercles[i].size()-2){
-        unsigned int la = m.normal(norm[i*n+(j+1)]).vertex(cercles[i][j+1]);
-        unsigned int lb = m.normal(norm[(i+1)*n+(j+1)]).vertex(cercles[i+1][j+1]);
-        unsigned int lc = m.normal(norm[(i+1)*n]).vertex(cercles[i+1][0]);
-        unsigned int ld = m.normal(norm[i*n]).vertex(cercles[i][0]);
-
+      if(j == cercles[i].size() - 2){
+        la = m.normal(norm[i*n+(j+1)]).vertex(cercles[i][j+1]);
+        lb = m.normal(norm[(i+1)*n+(j+1)]).vertex(cercles[i+1][j+1]);
+        lc = m.normal(norm[(i+1)*n]).vertex(cercles[i+1][0]);
+        ld = m.normal(norm[i*n]).vertex(cercles[i][0]);
         m.triangle(la,lc,lb);
         m.triangle(la,ld,lc);
       }
@@ -136,7 +137,6 @@ public:
           chaikin(points);
         }
 
-
         std::vector<Vector> orthogonaux;
         std::vector<std::vector<Point>> cercles;
         std::vector<Vector> norm;
@@ -151,8 +151,6 @@ public:
         objet= Mesh(GL_TRIANGLES);
         //génération et dessin des trianges
         dessine_triangles(objet, cercles, norm);
-
-
 
 
         // etape 1 : creer le shader program
