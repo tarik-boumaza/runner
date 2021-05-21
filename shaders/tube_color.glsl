@@ -27,7 +27,7 @@ in vec3 n;
 uniform mat4 viewInvMatrix;
 
 const vec3 emission= vec3(1);
-const float k= 1;
+const float k= 0.8;
 
 const float PI= 3.14159265359;
 
@@ -35,7 +35,7 @@ out vec4 fragment_color;
 void main( )
 {
     vec3 camera= vec3(viewInvMatrix * vec4(0, 0, 0, 1));        // position de la camera dans le repere du monde
-    vec3 source= vec3(10,100,150);        // source "frontale" positionnee par rapport a la camera
+    vec3 source = camera;
 
     // directions
     vec3 o= normalize(camera - p);
