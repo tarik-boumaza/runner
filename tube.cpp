@@ -89,6 +89,18 @@ void generation_normales (std::vector<std::vector<Point>> & cercles, std::vector
   }
 }
 
+void dessine_normales(Mesh& m,std::vector<std::vector<Point>> & cercles, std::vector<Vector> & normales){
+  int i,j,n;
+  for(i = 0; i < cercles.size(); i++){
+    for(j = 0; j < cercles[i].size(); j++){
+      n = cercles[i].size();
+      m.vertex(cercles[i][j]);
+      m.vertex(Point(normales[i*n+j] + cercles[i][j]));
+    }
+
+  }
+}
+
 
 void dessine_triangles(Mesh& m, std::vector<std::vector<Point>> cercles, std::vector<Vector> norm){
   unsigned int i, j, n, a, b, c, d, la, lb, lc, ld;
@@ -152,6 +164,9 @@ public:
         //génération et dessin des trianges
         dessine_triangles(objet, cercles, norm);
 
+        objet_norm= Mesh(GL_LINES);
+        dessine_normales(objet_norm, cercles, norm);
+
 
         // etape 1 : creer le shader program
         program= read_program("projet/shaders/tube_color.glsl");
@@ -207,14 +222,14 @@ public:
         //   . transformation : la matrice declaree dans le vertex shader s'appelle mvpMatrix
         program_uniform(program, "mvpMatrix", mvp);
         program_uniform(program, "modelMatrix", model);
-        program_uniform(program, "viewInvMatrix", Inverse(projection*view));
+        program_uniform(program, "viewInvMatrix", Inverse(view));
         //   . ou, directement en utilisant openGL :
         //   int location= glGetUniformLocation(program, "mvpMatrix");
         //   glUniformMatrix4fv(location, 1, GL_TRUE, mvp.buffer());
 
         // . parametres "supplementaires" :
         //   . couleur des pixels, cf la declaration 'uniform vec4 color;' dans le fragment shader
-        //program_uniform(program, "color", vec4(1, 1, 0, 1));
+        program_uniform(program, "color", vec4(1, 1, 0, 1));
         //   . ou, directement en utilisant openGL :
         //   int location= glGetUniformLocation(program, "color");
         //   glUniform4f(location, 1, 1, 0, 1);
@@ -229,6 +244,7 @@ public:
 
 protected:
     Mesh objet;
+    Mesh objet_norm;
     GLuint texture;
     GLuint program;
 };
