@@ -1,5 +1,5 @@
 
-//! \file tuto9.cpp utilisation d'un shader 'utilisateur' pour afficher un objet Mesh
+//! \file tuto9.cpp utilisation d'un shader 'utilisateur' pour afficher un tube Mesh
 
 #include "mat.h"
 #include "mesh.h"
@@ -105,8 +105,7 @@ public:
 
     int init( )
     {
-        // etape 1 : charger un objet
-        std::vector<Point> points;
+        // etape 1 : charger un tube
         points.push_back(Point(0., 1., 0.));
         points.push_back(Point(0., 1., 1.));
         points.push_back(Point(1., 1., 1.));
@@ -120,7 +119,6 @@ public:
           chaikin(points);
         }
 
-        std::vector<Vector> orthogonaux;
         std::vector<std::vector<Point>> cercles;
         std::vector<std::vector<Vector>> norm;
 
@@ -132,21 +130,24 @@ public:
         generation_cercles(points, orthogonaux, cercles, norm);
 
 
-        objet= Mesh(GL_TRIANGLES);
+        tube= Mesh(GL_TRIANGLES);
         //génération et dessin des trianges
-        dessine_triangles(objet, cercles, norm);
+        dessine_triangles(tube, cercles, norm);
+
+        //charge l'objet
+        objet= read_mesh("data/cube.obj");
 
 
         // etape 1 : creer le shader program
         program= read_program("projet/shaders/tube_color.glsl");
         program_print_errors(program);
 
-        // etape 2 : creer une camera pour observer l'objet
-        // construit l'englobant de l'objet, les extremites de sa boite englobante
+        // etape 2 : creer une camera pour observer l'tube
+        // construit l'englobant de l'tube, les extremites de sa boite englobante
         Point pmin, pmax;
-        objet.bounds(pmin, pmax);
+        tube.bounds(pmin, pmax);
 
-        // regle le point de vue de la camera pour observer l'objet
+        // regle le point de vue de la camera pour observer l'tube
         camera().lookat(pmin, pmax);
 
         // etat openGL par defaut
@@ -159,11 +160,12 @@ public:
         return 0;   // ras, pas d'erreur
     }
 
-    // destruction des objets de l'application
+    // destruction des tubes de l'application
     int quit( )
     {
         // etape 3 : detruire le shader program
         release_program(program);
+        tube.release();
         objet.release();
         return 0;
     }
@@ -174,7 +176,7 @@ public:
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
-        // etape 2 : dessiner objet avec le shader program
+        // etape 2 : dessiner tube avec le shader program
         // configurer le pipeline
         glUseProgram(program);
 
@@ -185,7 +187,23 @@ public:
         Transform projection= camera().projection(window_width(), window_height(), 45);
 
         // . composer les transformations : model, view et projection
+
+
         Transform mvp= projection * view * model;
+
+        Point p = points[0];
+        Vector d(points[1], points[0]);
+        double alpha = 0.0;
+        Transform R = Rotation(d,alpha);
+        Vector n(orthogonaux[0]);
+        Vector na(R(n));
+        Point pos_objet = p + r * na;
+
+
+        Transform m_transform_objet = Scale(0.1,0.1,0.1) * atlook(pos_objet, pos_objet + d, na);
+
+
+
 
         // . parametrer le shader program :
         //   . transformation : la matrice declaree dans le vertex shader s'appelle mvpMatrix
@@ -203,10 +221,12 @@ public:
         //   int location= glGetUniformLocation(program, "color");
         //   glUniform4f(location, 1, 1, 0, 1);
 
+
         // go !
         // indiquer quels attributs de sommets du mesh sont necessaires a l'execution du shader.
         // tuto9_color.glsl n'utilise que position. les autres de servent a rien.
-        objet.draw(program, /* use position */ true, /* use texcoord */ false, /* use normal */ true, /* use color */ false, /* use material index*/ false);
+        tube.draw(program, /* use position */ true, /* use texcoord */ false, /* use normal */ true, /* use color */ false, /* use material index*/ false);
+        draw(objet, m_transform_objet, camera());
 
         return 1;
     }
@@ -229,10 +249,14 @@ public:
     }
 
 
+
 protected:
+    Mesh tube;
     Mesh objet;
     GLuint texture;
     GLuint program;
+    std::vector<Point> points;
+    std::vector<Vector> orthogonaux;
     double r;
 };
 
