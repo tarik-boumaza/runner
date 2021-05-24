@@ -12,12 +12,13 @@
 
 #include "app_camera.h"      // classe Application a deriver
 
-
 void  chaikin(std::vector<Point> & points){
   std::vector<Point> res;
+  res.push_back(points[0]);
+  Point m1, m2;
   for(unsigned int i=0; i < points.size() - 1; i++){
-    Point m1 = points[i]+ 0.25*Vector(points[i],points[i+1]);
-    Point m2 = points[i]+ 0.75*Vector(points[i],points[i+1]);
+    m1 = points[i]+ 0.25*Vector(points[i],points[i+1]);
+    m2 = points[i]+ 0.75*Vector(points[i],points[i+1]);
     res.push_back(m1);
     res.push_back(m2);
   }
@@ -33,13 +34,13 @@ Vector rotation (Vector & v1, Vector & v2, Vector & d){
 }
 
 void vecteur_orthogonal (std::vector<Point> & points, std::vector<Vector> & orthogonaux){
-  Vector a0(points[0],points[1]);
+  Vector a0(points[0],points[1]), a1;
   Vector v(1,0,0);
   Vector d = normalize(cross(a0,v))*0.1;
   orthogonaux.push_back(d);
   for(unsigned int i = 0; i < points.size() - 2; i++){
-    Vector a0(points[i],points[i+1]);
-    Vector a1(points[i+1], points[i+2]);
+    a0 = Vector (points[i],points[i+1]);
+    a1 = Vector (points[i+1], points[i+2]);
     d = rotation(a0, a1,d);
     orthogonaux.push_back(d);
   }
@@ -50,11 +51,13 @@ void points_cercle(Point & p1, Point & p2, Vector & v, std::vector<Point> & pc, 
   Vector axe(p1,p2);
   float angle = 30.0;
   Transform tr = Rotation(axe, angle);
+  Transform tt;
+  Point p, pt;
   for(int i = 0; i < 12; i++){
     v = tr(v);
-    Transform tt = Translation(v);
-    Point p(p1.x-v.x, p1.y-v.y, p1.z-v.z);
-    Point pt(tt(p));
+    tt = Translation(v);
+    p = Point (p1.x-v.x, p1.y-v.y, p1.z-v.z);
+    pt = Point (tt(p));
     pc.push_back(p);
     nm.push_back(Vector(pt,p));
   }
@@ -129,6 +132,7 @@ public:
         //génération des cercles
         generation_cercles(points, orthogonaux, cercles, norm);
 
+        alpha = 0;
 
         tube= Mesh(GL_TRIANGLES);
         //génération et dessin des trianges
@@ -191,18 +195,23 @@ public:
 
         Transform mvp= projection * view * model;
 
-        Point p = points[0];
-        Vector d(points[1], points[0]);
-        double alpha = 0.0;
+        int indice = 0;
+        Point p = points[indice];
+        Vector d(points[indice+1], points[indice]);
+
+
+        if(key_state(SDLK_LEFT))
+            alpha = (alpha + 5) % 360;     // tourne vers la gauche
+        if(key_state(SDLK_RIGHT))
+            alpha = (alpha - 5) % 360;      // tourne vers la droite
+
         Transform R = Rotation(d,alpha);
         Vector n(orthogonaux[0]);
         Vector na(R(n));
         Point pos_objet = p + r * na;
 
 
-        Transform m_transform_objet = Scale(0.1,0.1,0.1) * atlook(pos_objet, pos_objet + d, na);
-
-
+        Transform m_transform_objet = atlook(pos_objet, pos_objet + d, na)*Translation(0,r+0.05,0)*Scale(0.1,0.1,0.1);
 
 
         // . parametrer le shader program :
@@ -258,8 +267,8 @@ protected:
     std::vector<Point> points;
     std::vector<Vector> orthogonaux;
     double r;
+    int alpha;
 };
-
 
 int main( int argc, char **argv )
 {
