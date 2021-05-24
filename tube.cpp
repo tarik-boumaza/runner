@@ -155,6 +155,8 @@ public:
 
         //je construis les vecteurs orthogonaux à la courbe
         vecteur_orthogonal(points, orthogonaux);
+        ///calcul rayon
+        r = getNorme(orthogonaux[0]);  //rayon tube
         //génération des cercles
         generation_cercles(points, orthogonaux, cercles);
         // génération normales
@@ -242,11 +244,30 @@ public:
         return 1;
     }
 
+    Transform atlook (const Point & from, const Point & d, const Vector & up)
+      {
+          Vector dir= normalize( Vector(from, d) );
+          Vector right= normalize( cross(dir, normalize(up)) );
+          Vector newUp= normalize( cross(right, dir) );
+
+          return Transform (
+              right.x, newUp.x, -dir.x, from.x,
+              right.y, newUp.y, -dir.y, from.y,
+              right.z, newUp.z, -dir.z, from.z,
+              0,       0,        0,     1);
+    }
+
+    static double getNorme(const Vector & p1) {
+        return sqrt( (p1.x) * (p1.x) + (p1.y) * (p1.y) + (p1.z) * (p1.z) );
+    }
+
+
 protected:
     Mesh objet;
     Mesh objet_norm;
     GLuint texture;
     GLuint program;
+    double r;
 };
 
 
