@@ -12,6 +12,12 @@
 
 #include "app_camera.h"      // classe Application a deriver
 
+#include <time.h>
+#include <stdlib.h>
+#include <iostream>
+
+static const float deplace_p = 10;
+
 void  chaikin(std::vector<Point> & points){
   std::vector<Point> res;
   res.push_back(points[0]);
@@ -36,7 +42,7 @@ Vector rotation (Vector & v1, Vector & v2, Vector & d){
 void vecteur_orthogonal (std::vector<Point> & points, std::vector<Vector> & orthogonaux){
   Vector a0(points[0],points[1]), a1;
   Vector v(1,0,0);
-  Vector d = normalize(cross(a0,v))*0.1;
+  Vector d = normalize(cross(a0,v));
   orthogonaux.push_back(d);
   for(unsigned int i = 0; i < points.size() - 2; i++){
     a0 = Vector (points[i],points[i+1]);
@@ -109,14 +115,31 @@ public:
     int init( )
     {
         // etape 1 : charger un tube
-        points.push_back(Point(0., 1., 0.));
-        points.push_back(Point(0., 1., 1.));
-        points.push_back(Point(1., 1., 1.));
-        points.push_back(Point(1., 0., 1.));
-        points.push_back(Point(0., 0., 1.));
-        points.push_back(Point(0., 0., 0.));
-        points.push_back(Point(1., 0., 0.));
-        points.push_back(Point(1., 1., 0.));
+        //srand(time(NULL));
+        lastTime = SDL_GetTicks();
+
+        unsigned int i = 0;
+        int random;
+
+        float tab_indices[3] = {0.0,0.0,0.0};
+        unsigned int nb_points = 5;
+        points.push_back(Point (tab_indices[0], tab_indices[1], tab_indices[2]));
+        while (i < nb_points) {
+            random = rand() % 3;
+            tab_indices[random] = tab_indices[random] + deplace_p;
+            points.push_back(Point (tab_indices[0], tab_indices[1], tab_indices[2]));
+            i++;
+        }
+
+        // // etape 1 : charger un tube
+        // points.push_back(Point(0., 1., 0.));
+        // points.push_back(Point(0., 1., 1.));
+        // points.push_back(Point(1., 1., 1.));
+        // points.push_back(Point(1., 0., 1.));
+        // points.push_back(Point(0., 0., 1.));
+        // points.push_back(Point(0., 0., 0.));
+        // points.push_back(Point(1., 0., 0.));
+        // points.push_back(Point(1., 1., 0.));
 
         for(unsigned int i=0; i < 10; i++){
           chaikin(points);
@@ -139,7 +162,7 @@ public:
         dessine_triangles(tube, cercles, norm);
 
         //charge l'objet
-        objet= read_mesh("data/cube.obj");
+        objet= read_mesh("data/robot.obj");
 
 
         // etape 1 : creer le shader program
@@ -150,6 +173,8 @@ public:
         // construit l'englobant de l'tube, les extremites de sa boite englobante
         Point pmin, pmax;
         tube.bounds(pmin, pmax);
+        indice = 600;
+
 
         // regle le point de vue de la camera pour observer l'tube
         camera().lookat(pmin, pmax);
@@ -180,39 +205,46 @@ public:
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
+        generation_nouveaux_points();
+
+        Point p = points[indice%points.size()];
+        Vector d(points[(indice+1)%points.size()], points[indice%points.size()]);
+
+
+        if(key_state(SDLK_LEFT))
+            alpha = (alpha + 2) % 360;     // tourne vers la gauche
+        if(key_state(SDLK_RIGHT))
+            alpha = (alpha - 2) % 360;      // tourne vers la droite
+
+        Transform R = Rotation(d,alpha);
+        Vector n(orthogonaux[indice%orthogonaux.size()]);
+        Vector na(R(n));
+        Point pos_objet = p + r * na;
+
+        //indice +=10;
+
+        Transform m_transform_objet = atlook(pos_objet, pos_objet + d, na)*Translation(0,r,0)*Scale(0.09,0.09,0.09);
+
+        Transform m_transform_camera = Translation(2*na)*Translation(200*d);
         // etape 2 : dessiner tube avec le shader program
         // configurer le pipeline
         glUseProgram(program);
 
         // configurer le shader program
         // . recuperer les transformations
+
         Transform model= Identity();
         Transform view= camera().view();
-        Transform projection= camera().projection(window_width(), window_height(), 45);
+        //Transform projection= camera().projection(window_width(), window_height(), 45);
+
+
+        //Transform view= Lookat(m_transform_camera(pos_objet),pos_objet, na);
+        Transform projection= Perspective(90, (float) window_width() / (float) window_height(), .1f, 1000.f);
 
         // . composer les transformations : model, view et projection
 
 
         Transform mvp= projection * view * model;
-
-        int indice = 0;
-        Point p = points[indice];
-        Vector d(points[indice+1], points[indice]);
-
-
-        if(key_state(SDLK_LEFT))
-            alpha = (alpha + 5) % 360;     // tourne vers la gauche
-        if(key_state(SDLK_RIGHT))
-            alpha = (alpha - 5) % 360;      // tourne vers la droite
-
-        Transform R = Rotation(d,alpha);
-        Vector n(orthogonaux[0]);
-        Vector na(R(n));
-        Point pos_objet = p + r * na;
-
-
-        Transform m_transform_objet = atlook(pos_objet, pos_objet + d, na)*Translation(0,r+0.05,0)*Scale(0.1,0.1,0.1);
-
 
         // . parametrer le shader program :
         //   . transformation : la matrice declaree dans le vertex shader s'appelle mvpMatrix
@@ -235,13 +267,13 @@ public:
         // indiquer quels attributs de sommets du mesh sont necessaires a l'execution du shader.
         // tuto9_color.glsl n'utilise que position. les autres de servent a rien.
         tube.draw(program, /* use position */ true, /* use texcoord */ false, /* use normal */ true, /* use color */ false, /* use material index*/ false);
-        draw(objet, m_transform_objet, camera());
+        draw(objet, m_transform_objet,/*camera()*/ view, projection);
 
         return 1;
     }
 
     Transform atlook (const Point & from, const Point & d, const Vector & up)
-      {
+    {
           Vector dir= normalize( Vector(from, d) );
           Vector right= normalize( cross(dir, normalize(up)) );
           Vector newUp= normalize( cross(right, dir) );
@@ -253,9 +285,61 @@ public:
               0,       0,        0,     1);
     }
 
-    static double getNorme(const Vector & p1) {
+    static double getNorme(const Vector & p1)
+    {
         return sqrt( (p1.x) * (p1.x) + (p1.y) * (p1.y) + (p1.z) * (p1.z) );
     }
+
+    void generation_nouveaux_points(){
+        int random;
+        unsigned int currentTime = SDL_GetTicks();
+        if (currentTime > lastTime + 1000){
+            float tab_indices[3] = {points[points.size() - 1].x, points[points.size() - 1].y, points[points.size() - 1].z};
+
+            random = rand() % 3;
+
+            std::cout << tab_indices[0] << " ; " << tab_indices[1] << " ; " << tab_indices[2] << std::endl;
+            if (random == 2 && tab_indices[2] > 10) {
+                tab_indices[2] = tab_indices[2] - deplace_p;
+            }
+            else {
+                tab_indices[random] = tab_indices[random] + deplace_p;
+            }
+
+            std::cout << tab_indices[0] << " ; " << tab_indices[1] << " ; " << tab_indices[2] << std::endl << std::endl;
+
+            std::vector<Point> tmp;
+            tmp.push_back(points[points.size() - 1]);
+            //std::cout << tmp[0] << std::endl;
+            tmp.push_back(Point (tab_indices[0], tab_indices[1], tab_indices[2]));
+
+            for (int i = 0; i < 10; i++) {
+                chaikin(tmp);
+            }
+
+            std::vector<Vector> orthogonaux_tmp;
+            std::vector<std::vector<Point>> cercles_tmp;
+            std::vector<std::vector<Vector>> norm_tmp;
+
+            //je construis les vecteurs orthogonaux à la courbe
+            vecteur_orthogonal(tmp, orthogonaux_tmp);
+
+            //génération des cercles
+            generation_cercles(tmp, orthogonaux_tmp, cercles_tmp, norm_tmp);
+
+            //génération et dessin des trianges
+            dessine_triangles(tube, cercles_tmp, norm_tmp);
+            //int s = points.size() - 1;
+            //std::cout << points[s] << std::endl;
+            points.insert( points.end(), tmp.begin(), tmp.end() );
+            //std::cout << points[s+10] << std::endl << std::endl;
+            orthogonaux.insert( orthogonaux.end(), orthogonaux_tmp.begin(), orthogonaux_tmp.end() );
+
+            lastTime = currentTime;
+        }
+
+    }
+
 
 
 
@@ -268,6 +352,9 @@ protected:
     std::vector<Vector> orthogonaux;
     double r;
     int alpha;
+    int indice;
+    unsigned int lastTime = 0;
+
 };
 
 int main( int argc, char **argv )
