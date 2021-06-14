@@ -15,6 +15,7 @@
 #include <time.h>
 #include <stdlib.h>
 #include <iostream>
+#include <cmath>        // std::abs
 
 static const float deplace_p = 10;
 
@@ -41,8 +42,18 @@ Vector rotation (Vector & v1, Vector & v2, Vector & d){
 
 void vecteur_orthogonal (std::vector<Point> & points, std::vector<Vector> & orthogonaux){
   Vector a0(points[0],points[1]), a1;
-  Vector v(1,0,0);
+  Vector v(1,1,1);
   Vector d = normalize(cross(a0,v));
+  if (abs(d.x - 0.0) < 0.1 && abs(d.y - 0.0) < 0.1 && abs(d.y - 0.0) < 0.1) {
+    std::cout << "orthogonaux!" << std::endl;
+    v = Vector(1,0,0);
+    d = normalize(cross(a0,v));
+    if (abs(d.x - 0.0) < 0.1 && abs(d.y - 0.0) < 0.1 && abs(d.y - 0.0) < 0.1) {
+      std::cout << "2" << std::endl;
+      v = Vector(0,1,0);
+      d = normalize(cross(a0,v));
+    }
+  }
   orthogonaux.push_back(d);
   for(unsigned int i = 0; i < points.size() - 2; i++){
     a0 = Vector (points[i],points[i+1]);
@@ -121,7 +132,7 @@ public:
         unsigned int i = 0;
         int random;
 
-        float tab_indices[3] = {0.0,0.0,0.0};
+        /*float tab_indices[3] = {0.0,0.0,0.0};
         unsigned int nb_points = 5;
         points.push_back(Point (tab_indices[0], tab_indices[1], tab_indices[2]));
         while (i < nb_points) {
@@ -129,27 +140,53 @@ public:
             tab_indices[random] = tab_indices[random] + deplace_p;
             points.push_back(Point (tab_indices[0], tab_indices[1], tab_indices[2]));
             i++;
-        }
-
+        }*/
         // // etape 1 : charger un tube
-        // points.push_back(Point(0., 1., 0.));
-        // points.push_back(Point(0., 1., 1.));
-        // points.push_back(Point(1., 1., 1.));
-        // points.push_back(Point(1., 0., 1.));
-        // points.push_back(Point(0., 0., 1.));
-        // points.push_back(Point(0., 0., 0.));
-        // points.push_back(Point(1., 0., 0.));
-        // points.push_back(Point(1., 1., 0.));
+        /*points.push_back(Point(0., 0., 1.));
+        points.push_back(Point(0., 0., 2.));
+        points.push_back(Point(0., 1., 2.));
+        points.push_back(Point(1., 1., 2.));
+        points.push_back(Point(1., 1., 3.));
+        points.push_back(Point(2., 1., 3.));
+        points.push_back(Point(2., 1., 2.));
+        points.push_back(Point(2., 1., 1.));
+        points.push_back(Point(2., 0., 0.));
+        points.push_back(Point(2., -1., 0.));
+        points.push_back(Point(1., -1., 0.));
+        points.push_back(Point(1., 0., -1.));
+        points.push_back(Point(-1, 0., 0.));*/
 
-        for(unsigned int i=0; i < 10; i++){
+
+        points.push_back(Point(0., 0., 1*deplace_p));
+        points.push_back(Point(0., 0., 2*deplace_p));
+        points.push_back(Point(0., 0., 3*deplace_p));
+        points.push_back(Point(0., 1*deplace_p, 3*deplace_p));
+        points.push_back(Point(0., 2*deplace_p, 3*deplace_p));
+        points.push_back(Point(0., 3*deplace_p, 3*deplace_p));
+        points.push_back(Point(1*deplace_p, 3*deplace_p, 3*deplace_p));
+        points.push_back(Point(1*deplace_p, 3*deplace_p, 2*deplace_p));
+        points.push_back(Point(1*deplace_p, 3*deplace_p, 1*deplace_p));
+        points.push_back(Point(1*deplace_p, 3*deplace_p, 0.));
+        points.push_back(Point(0, 2*deplace_p, 0.));
+        points.push_back(Point(0, 1*deplace_p, 0.));
+        points.push_back(Point(0., 0., 0.));
+        points.push_back(Point(0., 0., 1*deplace_p));
+        points.push_back(Point(0., 0., 2*deplace_p));
+
+
+        for(unsigned int i=0; i < 8; i++){
           chaikin(points);
         }
 
         std::vector<std::vector<Point>> cercles;
         std::vector<std::vector<Vector>> norm;
 
+
         //je construis les vecteurs orthogonaux à la courbe
         vecteur_orthogonal(points, orthogonaux);
+
+        points.erase(points.end() - 2, points.end());
+
         ///calcul rayon
         r = getNorme(orthogonaux[0]);  //rayon tube
         //génération des cercles
@@ -173,7 +210,7 @@ public:
         // construit l'englobant de l'tube, les extremites de sa boite englobante
         Point pmin, pmax;
         tube.bounds(pmin, pmax);
-        indice = 600;
+        indice = 0;
 
 
         // regle le point de vue de la camera pour observer l'tube
@@ -204,11 +241,18 @@ public:
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        indice += 10;
 
-        generation_nouveaux_points();
+        //generation_nouveaux_points();
+        if (indice >= points.size()) {
+          std::cout << std::endl << points[points.size()-1] << std::endl;
+          indice = 510;
+          std::cout << points[indice] << std::endl << std::endl;
+        }
 
-        Point p = points[indice%points.size()];
-        Vector d(points[(indice+1)%points.size()], points[indice%points.size()]);
+
+        Point p = points[indice];
+        Vector d(points[(indice+1)], points[indice]);
 
 
         if(key_state(SDLK_LEFT))
@@ -217,15 +261,16 @@ public:
             alpha = (alpha - 2) % 360;      // tourne vers la droite
 
         Transform R = Rotation(d,alpha);
+        std::cout << points[indice] << std::endl;
         Vector n(orthogonaux[indice%orthogonaux.size()]);
         Vector na(R(n));
         Point pos_objet = p + r * na;
 
-        //indice +=10;
+        //std::cout << indice << std::endl;
 
-        Transform m_transform_objet = atlook(pos_objet, pos_objet + d, na)*Translation(0,r,0)*Scale(0.09,0.09,0.09);
+        Transform m_transform_objet = atlook(pos_objet, pos_objet + d, na)*Translation(0,r/8,0)*Scale(0.09,0.09,0.09);
 
-        Transform m_transform_camera = Translation(2*na)*Translation(200*d);
+        Transform m_transform_camera = Translation(2.5*na)*Translation(50*d);
         // etape 2 : dessiner tube avec le shader program
         // configurer le pipeline
         glUseProgram(program);
@@ -233,12 +278,12 @@ public:
         // configurer le shader program
         // . recuperer les transformations
 
-        Transform model= Identity();
+        /*Transform model= Identity();
         Transform view= camera().view();
-        //Transform projection= camera().projection(window_width(), window_height(), 45);
+        Transform projection= camera().projection(window_width(), window_height(), 45);*/
 
-
-        //Transform view= Lookat(m_transform_camera(pos_objet),pos_objet, na);
+        Transform model= Identity();
+        Transform view= Lookat(m_transform_camera(pos_objet),pos_objet, na);
         Transform projection= Perspective(90, (float) window_width() / (float) window_height(), .1f, 1000.f);
 
         // . composer les transformations : model, view et projection
@@ -298,20 +343,23 @@ public:
 
             random = rand() % 3;
 
-            std::cout << tab_indices[0] << " ; " << tab_indices[1] << " ; " << tab_indices[2] << std::endl;
-            if (random == 2 && tab_indices[2] > 10) {
-                tab_indices[2] = tab_indices[2] - deplace_p;
-            }
-            else {
-                tab_indices[random] = tab_indices[random] + deplace_p;
-            }
-
-            std::cout << tab_indices[0] << " ; " << tab_indices[1] << " ; " << tab_indices[2] << std::endl << std::endl;
-
             std::vector<Point> tmp;
             tmp.push_back(points[points.size() - 1]);
-            //std::cout << tmp[0] << std::endl;
+            if (derniere_direction == 3)
+              tab_indices[2] -= deplace_p;
+            else
+              tab_indices[derniere_direction] += deplace_p;
             tmp.push_back(Point (tab_indices[0], tab_indices[1], tab_indices[2]));
+
+
+            std::cout << tab_indices[0] << " ; " << tab_indices[1] << " ; " << tab_indices[2] << std::endl;
+
+            tab_indices[random] = tab_indices[random] + deplace_p;
+            derniere_direction = random;
+
+
+            tmp.push_back(Point (tab_indices[0], tab_indices[1], tab_indices[2]));
+            //std::cout << tab_indices[0] << " ; " << tab_indices[1] << " ; " << tab_indices[2] << std::endl;
 
             for (int i = 0; i < 10; i++) {
                 chaikin(tmp);
@@ -324,17 +372,26 @@ public:
             //je construis les vecteurs orthogonaux à la courbe
             vecteur_orthogonal(tmp, orthogonaux_tmp);
 
+            tmp.erase(tmp.begin(), tmp.begin() + 2);
+
             //génération des cercles
             generation_cercles(tmp, orthogonaux_tmp, cercles_tmp, norm_tmp);
 
             //génération et dessin des trianges
             dessine_triangles(tube, cercles_tmp, norm_tmp);
-            //int s = points.size() - 1;
-            //std::cout << points[s] << std::endl;
+
+            int s = points.size() - 1;
+
             points.insert( points.end(), tmp.begin(), tmp.end() );
-            //std::cout << points[s+10] << std::endl << std::endl;
+
+            for (int i = s - 0; i < s + 0; i++) {
+              std::cout << points[i] << " ; " << std::flush;
+            }
+
             orthogonaux.insert( orthogonaux.end(), orthogonaux_tmp.begin(), orthogonaux_tmp.end() );
 
+
+            std::cout << std::endl;
             lastTime = currentTime;
         }
 
@@ -349,10 +406,11 @@ protected:
     GLuint texture;
     GLuint program;
     std::vector<Point> points;
+    int derniere_direction;
     std::vector<Vector> orthogonaux;
     double r;
     int alpha;
-    int indice;
+    unsigned indice;
     unsigned int lastTime = 0;
 
 };
