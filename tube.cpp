@@ -9,14 +9,16 @@
 #include "program.h"
 #include "uniforms.h"
 #include "draw.h"
+#include "text.h"
 #include "box.hpp"
-
-
 #include "app_camera.h"      // classe Application a deriver
 
 #include <time.h>
 #include <stdlib.h>
 #include <iostream>
+#include <sstream>      // std::stringstream
+#include <cmath>        // std::abs
+
 
 static const float deplace_p = 10;
 
@@ -45,6 +47,16 @@ void vecteur_orthogonal (std::vector<Point> & points, std::vector<Vector> & orth
   Vector a0(points[0],points[1]), a1;
   Vector v(1,0,0);
   Vector d = normalize(cross(a0,v));
+  if (abs(d.x - 0.0) < 0.1 && abs(d.y - 0.0) < 0.1 && abs(d.y - 0.0) < 0.1) {
+    std::cout << "orthogonaux!" << std::endl;
+    v = Vector(1,0,0);
+    d = normalize(cross(a0,v));
+    if (abs(d.x - 0.0) < 0.1 && abs(d.y - 0.0) < 0.1 && abs(d.y - 0.0) < 0.1) {
+      std::cout << "2" << std::endl;
+      v = Vector(0,1,0);
+      d = normalize(cross(a0,v));
+    }
+  }
   orthogonaux.push_back(d);
   for(unsigned int i = 0; i < points.size() - 2; i++){
     a0 = Vector (points[i],points[i+1]);
@@ -116,34 +128,31 @@ public:
 
     int init( )
     {
-        // etape 1 : charger un tube
-        srand(time(NULL));
-        lastTime = SDL_GetTicks();
-
-        unsigned int i = 0;
-        int random;
-
-        float tab_indices[3] = {0.0,0.0,0.0};
-        unsigned int nb_points = 5;
-        points.push_back(Point (tab_indices[0], tab_indices[1], tab_indices[2]));
-        while (i < nb_points) {
-            random = rand() % 3;
-            tab_indices[random] = tab_indices[random] + deplace_p;
-            points.push_back(Point (tab_indices[0], tab_indices[1], tab_indices[2]));
-            i++;
-        }
 
         // // etape 1 : charger un tube
-        // points.push_back(Point(0., 1., 0.));
-        // points.push_back(Point(0., 1., 1.));
-        // points.push_back(Point(1., 1., 1.));
-        // points.push_back(Point(1., 0., 1.));
-        // points.push_back(Point(0., 0., 1.));
-        // points.push_back(Point(0., 0., 0.));
-        // points.push_back(Point(1., 0., 0.));
-        // points.push_back(Point(1., 1., 0.));
 
-        for(unsigned int i=0; i < 10; i++){
+        points.push_back(Point(0., 0., 1*deplace_p));
+        points.push_back(Point(0., 0., 2*deplace_p));
+        points.push_back(Point(0., 0., 3*deplace_p));
+        points.push_back(Point(0., 1*deplace_p, 3*deplace_p));
+        points.push_back(Point(0., 2*deplace_p, 3*deplace_p));
+        points.push_back(Point(0., 3*deplace_p, 3*deplace_p));
+        points.push_back(Point(1*deplace_p, 3*deplace_p, 3*deplace_p));
+
+        points.push_back(Point(2*deplace_p, 4*deplace_p, 3*deplace_p));
+        points.push_back(Point(2*deplace_p, 3*deplace_p, 3*deplace_p));
+        points.push_back(Point(1*deplace_p, 3*deplace_p, 3*deplace_p));
+        points.push_back(Point(1*deplace_p, 3*deplace_p, 2*deplace_p));
+        points.push_back(Point(1*deplace_p, 3*deplace_p, 1*deplace_p));
+        points.push_back(Point(1*deplace_p, 3*deplace_p, 0.));
+        points.push_back(Point(0, 2*deplace_p, 0.));
+        points.push_back(Point(0, 1*deplace_p, 0.));
+        points.push_back(Point(0., 0., 0.));
+        points.push_back(Point(0., 0., 1*deplace_p));
+        points.push_back(Point(0., 0., 2*deplace_p));
+
+
+        for(unsigned int i=0; i < 8; i++){
           chaikin(points);
         }
 
@@ -158,11 +167,13 @@ public:
         generation_cercles(points, orthogonaux, cercles, norm);
 
         alpha = 0;
+        niveau = 1;
 
         tube= Mesh(GL_TRIANGLES);
         //génération et dessin des trianges
         dessine_triangles(tube, cercles, norm);
 
+        int random;
         // Initialisation du tableau d'obstacles
         for(int i = 0; i < 30; i++) {
           random = rand()%(points.size()-1000) + 1000;
@@ -170,8 +181,6 @@ public:
           random = rand()% 360;
           angles.push_back(random);
         }
-
-
 
         //charge l'objet
         objet= read_mesh("data/cube.obj");
@@ -199,7 +208,7 @@ public:
         // construit l'englobant de l'tube, les extremites de sa boite englobante
         Point pmin, pmax;
         tube.bounds(pmin, pmax);
-        indice = 600;
+        indice = 10;
 
 
         // regle le point de vue de la camera pour observer l'tube
@@ -222,7 +231,7 @@ public:
         release_program(program);
         tube.release();
         objet.release();
-        red.release();
+        release_text(console);
         return 0;
     }
 
@@ -231,12 +240,22 @@ public:
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        indice += 2*niveau + 2;
+        //generation_nouveaux_points()
+        if (indice > points.size() - 1) {
+          niveau += 1;
+          indice = 10;
+        }
 
-        //generation_nouveaux_points();
+        std::string str = "Niveau " + std::to_string(niveau);
+        char char_array[str.size() + 5];
+        console = create_text();
+        strcpy(char_array, str.c_str());
+        printf(console, 0, 0, char_array);
+        draw(console, window_width(), window_height());
 
-        Point p = points[indice%points.size()];
-        Vector d(points[(indice+1)%points.size()], points[indice%points.size()]);
-
+        Point p = points[indice];
+        Vector d(points[(indice+1)], points[indice]);
 
         if(key_state(SDLK_LEFT))
             alpha = (alpha + 2) % 360;     // tourne vers la gauche
@@ -244,15 +263,13 @@ public:
             alpha = (alpha - 2) % 360;      // tourne vers la droite
 
         Transform R = Rotation(d,alpha);
-        Vector n(orthogonaux[indice%orthogonaux.size()]);
+        Vector n(orthogonaux[indice]);
         Vector na(R(n));
         Point pos_objet = p + r * na;
 
-        indice +=10;
+        Transform m_transform_objet = atlook(pos_objet, pos_objet + d, na)*Translation(0,r/8,0)*Scale(0.09,0.09,0.09);
 
-        Transform m_transform_objet = atlook(pos_objet, pos_objet + d, na)*Translation(0,0.05,0)*Scale(0.1,0.1,0.1);
-
-        Transform m_transform_camera = Translation(2*na)*Translation(200*d);
+        Transform m_transform_camera = Translation(2*na)*Translation(50*d);
         // etape 2 : dessiner tube avec le shader program
         // configurer le pipeline
         glUseProgram(program);
@@ -350,58 +367,6 @@ public:
         return sqrt( (p1.x) * (p1.x) + (p1.y) * (p1.y) + (p1.z) * (p1.z) );
     }
 
-    void generation_nouveaux_points(){
-        int random;
-        unsigned int currentTime = SDL_GetTicks();
-        if (currentTime > lastTime + 1000){
-            float tab_indices[3] = {points[points.size() - 1].x, points[points.size() - 1].y, points[points.size() - 1].z};
-
-            random = rand() % 3;
-
-            std::cout << tab_indices[0] << " ; " << tab_indices[1] << " ; " << tab_indices[2] << std::endl;
-            if (random == 2 && tab_indices[2] > 10) {
-                tab_indices[2] = tab_indices[2] - deplace_p;
-            }
-            else {
-                tab_indices[random] = tab_indices[random] + deplace_p;
-            }
-
-            std::cout << tab_indices[0] << " ; " << tab_indices[1] << " ; " << tab_indices[2] << std::endl << std::endl;
-
-            std::vector<Point> tmp;
-            tmp.push_back(points[points.size() - 1]);
-            //std::cout << tmp[0] << std::endl;
-            tmp.push_back(Point (tab_indices[0], tab_indices[1], tab_indices[2]));
-
-            for (int i = 0; i < 10; i++) {
-                chaikin(tmp);
-            }
-
-            std::vector<Vector> orthogonaux_tmp;
-            std::vector<std::vector<Point>> cercles_tmp;
-            std::vector<std::vector<Vector>> norm_tmp;
-
-            //je construis les vecteurs orthogonaux à la courbe
-            vecteur_orthogonal(tmp, orthogonaux_tmp);
-
-            //génération des cercles
-            generation_cercles(tmp, orthogonaux_tmp, cercles_tmp, norm_tmp);
-
-            //génération et dessin des trianges
-            dessine_triangles(tube, cercles_tmp, norm_tmp);
-            //int s = points.size() - 1;
-            //std::cout << points[s] << std::endl;
-            points.insert( points.end(), tmp.begin(), tmp.end() );
-            //std::cout << points[s+10] << std::endl << std::endl;
-            orthogonaux.insert( orthogonaux.end(), orthogonaux_tmp.begin(), orthogonaux_tmp.end() );
-
-            lastTime = currentTime;
-        }
-
-    }
-
-
-
 
 
 protected:
@@ -411,10 +376,13 @@ protected:
     GLuint texture;
     GLuint program;
     std::vector<Point> points;
+    int derniere_direction;
     std::vector<Vector> orthogonaux;
     double r;
+    int niveau;
     int alpha;
-    int indice;
+    unsigned indice;
+    Text console;
     unsigned int lastTime = 0;
     std::vector<int> obstacles;
     std::vector<int> angles;
