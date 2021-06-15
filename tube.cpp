@@ -117,7 +117,7 @@ public:
     int init( )
     {
         // etape 1 : charger un tube
-        //srand(time(NULL));
+        srand(time(NULL));
         lastTime = SDL_GetTicks();
 
         unsigned int i = 0;
@@ -163,9 +163,21 @@ public:
         //génération et dessin des trianges
         dessine_triangles(tube, cercles, norm);
 
+        // Initialisation du tableau d'obstacles
+        for(int i = 0; i < 30; i++) {
+          random = rand()%(points.size()-1000) + 1000;
+          obstacles.push_back(random);
+          random = rand()% 360;
+          angles.push_back(random);
+        }
+
+
+
         //charge l'objet
         objet= read_mesh("data/cube.obj");
         objet.default_color(Green()) ;
+
+        obstacle = read_mesh("data/obstacle.obj");
 
         red = read_mesh("data/cube.obj") ;
         red.default_color(Red()) ;
@@ -173,7 +185,10 @@ public:
         Point pmin_box, pmax_box ;
         objet.bounds(pmin_box, pmax_box) ;
         b1 = Box(pmin_box, pmax_box) ;
-        b2 = Box(pmin_box, pmax_box) ;
+        for(int i = 0; i < 30; i++) {
+          boxes.push_back(Box(pmin_box, pmax_box));
+        }
+
 
 
         // etape 1 : creer le shader program
@@ -207,6 +222,7 @@ public:
         release_program(program);
         tube.release();
         objet.release();
+        red.release();
         return 0;
     }
 
@@ -232,7 +248,7 @@ public:
         Vector na(R(n));
         Point pos_objet = p + r * na;
 
-        indice +=1;
+        indice +=10;
 
         Transform m_transform_objet = atlook(pos_objet, pos_objet + d, na)*Translation(0,0.05,0)*Scale(0.1,0.1,0.1);
 
@@ -244,11 +260,11 @@ public:
         // configurer le shader program
         // . recuperer les transformations
 
+        /*Transform model= Identity();
+        Transform view= camera().view();
+        Transform projection= camera().projection(window_width(), window_height(), 45);*/
+
         Transform model= Identity();
-        //Transform view= camera().view();
-        //Transform projection= camera().projection(window_width(), window_height(), 45);
-
-
         Transform view= Lookat(m_transform_camera(pos_objet),pos_objet, na);
         Transform projection= Perspective(90, (float) window_width() / (float) window_height(), .1f, 1000.f);
 
@@ -278,37 +294,39 @@ public:
         // indiquer quels attributs de sommets du mesh sont necessaires a l'execution du shader.
         // tuto9_color.glsl n'utilise que position. les autres de servent a rien.
         tube.draw(program, /* use position */ true, /* use texcoord */ false, /* use normal */ true, /* use color */ false, /* use material index*/ false);
-        //draw(objet, m_transform_objet,/*camera()*/ view, projection);
+        draw(objet, m_transform_objet,/*camera()*/ view, projection);
 
 
         /////////////////////////////////////  Ajout d'obstacle /////////////////////////////////
-        Point p_ob = points[1000];
-        Vector d_ob(points[1000], points[1001]);
+        std::vector<Transform> m_transform_obstacles;
+        for(int i = 0; i < obstacles.size(); i++) {
+          Point p_ob = points[obstacles[i]];
+          Vector d_ob(points[obstacles[i]], points[obstacles[i]+1]);
 
-        Transform R_ob = Rotation(d_ob, 0);
-        Vector n_ob(orthogonaux[1000]);
-        Vector na_ob(R_ob(n_ob));
-        Point pos_ob = p_ob + r * na_ob;
+          Transform R_ob = Rotation(d_ob, angles[i]);
+          Vector n_ob(orthogonaux[obstacles[i]]);
+          Vector na_ob(R_ob(n_ob));
+          Point pos_ob = p_ob + r * na_ob;
 
-
-
-        Transform m_transform_obstacle = atlook(pos_ob, pos_ob + d_ob, na_ob)*Translation(0,0.05,0)*Scale(0.1,0.1,0.1);
-        //draw(objet, m_transform_obstacle,/*camera()*/ view, projection);
-
-
-        ////////////////////////////////// Collision /////////////////////////
-        b1.T = m_transform_objet ;
-        b2.T = m_transform_obstacle;
-        std::cout<<"position cube " << pos_objet <<std::endl;
-        std::cout<<"position obstacle "<< pos_ob <<std::endl;
-        if((int)p_ob.x >= (int)pos_objet.x - 5 && (int)p_ob.x <= (int)pos_objet.x + 5 &&  (int)p_ob.y >= (int)pos_objet.y - 5 &&  (int)p_ob.y <= (int)pos_objet.y + 5 && (int)p_ob.z >= (int)pos_objet.z - 5 && (int)p_ob.z <= (int)pos_objet.z + 5 && alpha%360 >= 10 && alpha%360 <= 30) {
-            draw(objet, b1.T, view, projection) ;
-            draw(objet, b2.T, view, projection) ;
-        } else {
-            draw(red, b1.T, view, projection) ;
-            draw(red, b2.T, view, projection) ;
+          Transform m_transform_obstacle = atlook(pos_ob, pos_ob + d_ob, na_ob)*Translation(0,0.05,0)*Scale(0.1,0.1,0.1);
+          draw(obstacle, m_transform_obstacle,/*camera()*/ view, projection);
         }
 
+
+
+
+        ////////////////////////////////// Collision ///////////////////////////
+        /*b1.T = m_transform_objet ;
+
+        for(int i = 0; i < boxes.size(); i++) {
+          if(b1.collides(boxes[i])) {
+              draw(red, b1.T, view, projection) ;
+              draw(red, boxes[i].T, view, projection) ;
+          } else {
+              draw(objet, b1.T, view, projection) ;
+              draw(red, boxes[i].T, view, projection) ;
+          }
+        }*/
 
 
         return 1;
@@ -385,9 +403,11 @@ public:
 
 
 
+
 protected:
     Mesh tube;
     Mesh objet;
+    Mesh obstacle;
     GLuint texture;
     GLuint program;
     std::vector<Point> points;
@@ -396,10 +416,12 @@ protected:
     int alpha;
     int indice;
     unsigned int lastTime = 0;
-    Mesh red ;
+    std::vector<int> obstacles;
+    std::vector<int> angles;
 
-    Box b1 ;
-    Box b2 ;
+    Mesh red;
+    Box b1;
+    std::vector<Box> boxes;
 
 };
 
