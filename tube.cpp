@@ -42,7 +42,7 @@ Vector rotation (Vector & v1, Vector & v2, Vector & d){
 
 void vecteur_orthogonal (std::vector<Point> & points, std::vector<Vector> & orthogonaux){
   Vector a0(points[0],points[1]), a1;
-  Vector v(1,1,1);
+  Vector v(1,0,0);
   Vector d = normalize(cross(a0,v));
   if (abs(d.x - 0.0) < 0.1 && abs(d.y - 0.0) < 0.1 && abs(d.y - 0.0) < 0.1) {
     std::cout << "orthogonaux!" << std::endl;
@@ -164,6 +164,10 @@ public:
         points.push_back(Point(0., 2*deplace_p, 3*deplace_p));
         points.push_back(Point(0., 3*deplace_p, 3*deplace_p));
         points.push_back(Point(1*deplace_p, 3*deplace_p, 3*deplace_p));
+
+        points.push_back(Point(2*deplace_p, 4*deplace_p, 3*deplace_p));
+        points.push_back(Point(2*deplace_p, 3*deplace_p, 3*deplace_p));
+        points.push_back(Point(1*deplace_p, 3*deplace_p, 3*deplace_p));
         points.push_back(Point(1*deplace_p, 3*deplace_p, 2*deplace_p));
         points.push_back(Point(1*deplace_p, 3*deplace_p, 1*deplace_p));
         points.push_back(Point(1*deplace_p, 3*deplace_p, 0.));
@@ -178,14 +182,78 @@ public:
           chaikin(points);
         }
 
+        int i_min = 500;
+        double sqrt_min = sqrt( (0-points[i_min].x)*(0-points[i_min].x)
+                  + (0-points[i_min].y)*(0-points[i_min].y)
+                  + (deplace_p-points[i_min].z)*(deplace_p-points[i_min].z));
+        for (unsigned int i = 500; i < points.size(); i++) {
+          if (sqrt( (0-points[i].x)*(0-points[i].x)
+                    + (0-points[i].y)*(0-points[i].y)
+                    + (deplace_p-points[i].z)*(deplace_p-points[i].z)) < sqrt_min) {
+                      i_min = i;
+                      sqrt_min = sqrt( (0-points[i].x)*(0-points[i].x)
+                                + (0-points[i].y)*(0-points[i].y)
+                                + (deplace_p-points[i].z)*(deplace_p-points[i].z));
+                    }
+        }
+
         std::vector<std::vector<Point>> cercles;
         std::vector<std::vector<Vector>> norm;
 
+        /*std::vector<Point> temp;
 
+        for (unsigned int i = 3456 ; i < points.size(); i++) {
+          points[i] = points[i-3456];
+          //std::cout << points[i-1] << std::endl;
+        }
+        //std::cout << points.size() << std::endl;
+*/
         //je construis les vecteurs orthogonaux à la courbe
         vecteur_orthogonal(points, orthogonaux);
 
-        points.erase(points.end() - 2, points.end());
+        i_min = 50;
+        sqrt_min = sqrt( (orthogonaux[0].x-points[i_min].x)*(orthogonaux[0].x-points[i_min].x)
+                  + (orthogonaux[0].y-points[i_min].y)*(orthogonaux[0].y-points[i_min].y)
+                  + (orthogonaux[0].z-points[i_min].z)*(orthogonaux[0].z-points[i_min].z));
+        for (unsigned int i = 500; i < points.size(); i++) {
+          if (sqrt( (orthogonaux[i].x-points[i_min].x)*(orthogonaux[i].x-points[i_min].x)
+                    + (orthogonaux[i].y-points[i_min].y)*(orthogonaux[i].y-points[i_min].y)
+                    + (orthogonaux[i].z-points[i_min].z)*(orthogonaux[i].z-points[i_min].z) < sqrt_min)) {
+              i_min = i;
+              sqrt_min = sqrt( (orthogonaux[i].x-points[i_min].x)*(orthogonaux[i].x-points[i_min].x)
+                        + (orthogonaux[i].y-points[i_min].y)*(orthogonaux[i].y-points[i_min].y)
+                        + (orthogonaux[i].z-points[i_min].z)*(orthogonaux[i].z-points[i_min].z));
+          }
+        }
+        //std::cout << "best i = " << i_min << " : " << orthogonaux[i_min] << " - " << orthogonaux[0] << std::endl;
+        points.erase(points.end() - 1, points.end());
+
+        /*for (unsigned int i = 3456 ; i < orthogonaux.size(); i++) {
+          orthogonaux[i] = orthogonaux[i-3456];
+          //std::cout << points[i-1] << std::endl;
+        }*/
+
+        /*for (unsigned int i = 0 ; i < orthogonaux.size() ; i++) {
+          std::cout << points[i] << " - " << orthogonaux[i] << std::endl;
+          if (i == 3456) {
+            std::cout << std::endl;
+          }
+        }
+        std::cout << std::endl;*/
+        /*for (unsigned int i = 3456 ; i < orthogonaux.size(); i++) {
+          std::cout << orthogonaux[i] << std::endl;
+        }*/
+/*
+        for (unsigned i = 0; i < points.size() - 3456; i++) {
+          std::cout << points[i] << std::endl;
+        }
+
+        std::cout << std::endl;
+        for (int i = 100; i >= 0; i--) {
+          std::cout << points[points.size() - 1] << std::endl;
+        }*/
+
+
 
         ///calcul rayon
         r = getNorme(orthogonaux[0]);  //rayon tube
@@ -193,6 +261,7 @@ public:
         generation_cercles(points, orthogonaux, cercles, norm);
 
         alpha = 0;
+        niveau = 0;
 
         tube= Mesh(GL_TRIANGLES);
         //génération et dessin des trianges
@@ -210,7 +279,7 @@ public:
         // construit l'englobant de l'tube, les extremites de sa boite englobante
         Point pmin, pmax;
         tube.bounds(pmin, pmax);
-        indice = 0;
+        indice = 120;
 
 
         // regle le point de vue de la camera pour observer l'tube
@@ -241,13 +310,46 @@ public:
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        indice += 10;
 
-        //generation_nouveaux_points();
-        if (indice >= points.size()) {
-          std::cout << std::endl << points[points.size()-1] << std::endl;
-          indice = 510;
-          std::cout << points[indice] << std::endl << std::endl;
+        //std::cout << orthogonaux.size() << std::endl;
+        std::cout << indice << "/" << points.size() << std::endl;
+
+        indice += niveau + 3;
+
+        //generation_nouveaux_points()
+        ;
+        if (indice > points.size() - 1) {
+          //std::cout << std::endl << points[points.size()-1] << std::endl;
+          /*for (int i = 20; i > 0; i--) {
+            std::cout << points[points.size() - i] << std::endl;
+          }*/
+          /*for (unsigned int i = 10; i > 0; i--) {
+            std::cout << orthogonaux[indice - i] << std::endl;
+          }*/
+          /*indice -= 10;
+          std::cout <<  Vector (Rotation(Vector (points[(indice+1)], points[indice]),alpha)(orthogonaux[indice])) << std::endl;
+          indice +=10;
+          std::cout <<  Vector (Rotation(Vector (points[(indice+1)], points[indice]),alpha)(orthogonaux[indice])) << std::endl;
+          indice = 128;
+          std::cout <<  Vector (Rotation(Vector (points[(indice+1)], points[indice]),alpha)(orthogonaux[indice])) << std::endl;*/
+
+          niveau += 2;
+          indice = 0;
+          //std::cout <<   orthogonaux[indice] << std::endl;
+          //std::cout <<   orthogonaux[indice+20] << std::endl;
+          for (unsigned int i = 0; i < orthogonaux.size(); i++) {
+            std::cout << orthogonaux[i] << std::endl;
+            if (orthogonaux[i].x == orthogonaux[0].x && orthogonaux[i].y == orthogonaux[0].y && orthogonaux[i].z == orthogonaux[0].z) {
+              std::cout << "!!!!!!!!!!" << i << "!!!!!!!!!" << std::endl;
+            }
+          }
+          std::cout << std::endl << std::endl;
+          //std::cout << points[indice] << std::endl << std::endl;
+          /*for (int i = -10; i < 20; i++) {
+            std::cout << points[i+indice] << std::endl;
+          }*/
+
+
         }
 
 
@@ -261,8 +363,7 @@ public:
             alpha = (alpha - 2) % 360;      // tourne vers la droite
 
         Transform R = Rotation(d,alpha);
-        std::cout << points[indice] << std::endl;
-        Vector n(orthogonaux[indice%orthogonaux.size()]);
+        Vector n(orthogonaux[indice]);
         Vector na(R(n));
         Point pos_objet = p + r * na;
 
@@ -409,6 +510,7 @@ protected:
     int derniere_direction;
     std::vector<Vector> orthogonaux;
     double r;
+    int niveau;
     int alpha;
     unsigned indice;
     unsigned int lastTime = 0;
