@@ -9,6 +9,8 @@
 #include "program.h"
 #include "uniforms.h"
 #include "draw.h"
+#include "box.hpp"
+
 
 #include "app_camera.h"      // classe Application a deriver
 
@@ -162,7 +164,16 @@ public:
         dessine_triangles(tube, cercles, norm);
 
         //charge l'objet
-        objet= read_mesh("data/robot.obj");
+        objet= read_mesh("data/cube.obj");
+        objet.default_color(Green()) ;
+
+        red = read_mesh("data/cube.obj") ;
+        red.default_color(Red()) ;
+
+        Point pmin_box, pmax_box ;
+        objet.bounds(pmin_box, pmax_box) ;
+        b1 = Box(pmin_box, pmax_box) ;
+        b2 = Box(pmin_box, pmax_box) ;
 
 
         // etape 1 : creer le shader program
@@ -177,7 +188,7 @@ public:
 
 
         // regle le point de vue de la camera pour observer l'tube
-        camera().lookat(pmin, pmax);
+        //camera().lookat(pmin, pmax);
 
         // etat openGL par defaut
         glClearColor(0.2f, 0.2f, 0.2f, 1.f);        // couleur par defaut de la fenetre
@@ -205,7 +216,7 @@ public:
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
-        generation_nouveaux_points();
+        //generation_nouveaux_points();
 
         Point p = points[indice%points.size()];
         Vector d(points[(indice+1)%points.size()], points[indice%points.size()]);
@@ -221,9 +232,9 @@ public:
         Vector na(R(n));
         Point pos_objet = p + r * na;
 
-        //indice +=10;
+        indice +=1;
 
-        Transform m_transform_objet = atlook(pos_objet, pos_objet + d, na)*Translation(0,r,0)*Scale(0.09,0.09,0.09);
+        Transform m_transform_objet = atlook(pos_objet, pos_objet + d, na)*Translation(0,0.05,0)*Scale(0.1,0.1,0.1);
 
         Transform m_transform_camera = Translation(2*na)*Translation(200*d);
         // etape 2 : dessiner tube avec le shader program
@@ -234,11 +245,11 @@ public:
         // . recuperer les transformations
 
         Transform model= Identity();
-        Transform view= camera().view();
+        //Transform view= camera().view();
         //Transform projection= camera().projection(window_width(), window_height(), 45);
 
 
-        //Transform view= Lookat(m_transform_camera(pos_objet),pos_objet, na);
+        Transform view= Lookat(m_transform_camera(pos_objet),pos_objet, na);
         Transform projection= Perspective(90, (float) window_width() / (float) window_height(), .1f, 1000.f);
 
         // . composer les transformations : model, view et projection
@@ -267,7 +278,38 @@ public:
         // indiquer quels attributs de sommets du mesh sont necessaires a l'execution du shader.
         // tuto9_color.glsl n'utilise que position. les autres de servent a rien.
         tube.draw(program, /* use position */ true, /* use texcoord */ false, /* use normal */ true, /* use color */ false, /* use material index*/ false);
-        draw(objet, m_transform_objet,/*camera()*/ view, projection);
+        //draw(objet, m_transform_objet,/*camera()*/ view, projection);
+
+
+        /////////////////////////////////////  Ajout d'obstacle /////////////////////////////////
+        Point p_ob = points[1000];
+        Vector d_ob(points[1000], points[1001]);
+
+        Transform R_ob = Rotation(d_ob, 0);
+        Vector n_ob(orthogonaux[1000]);
+        Vector na_ob(R_ob(n_ob));
+        Point pos_ob = p_ob + r * na_ob;
+
+
+
+        Transform m_transform_obstacle = atlook(pos_ob, pos_ob + d_ob, na_ob)*Translation(0,0.05,0)*Scale(0.1,0.1,0.1);
+        //draw(objet, m_transform_obstacle,/*camera()*/ view, projection);
+
+
+        ////////////////////////////////// Collision /////////////////////////
+        b1.T = m_transform_objet ;
+        b2.T = m_transform_obstacle;
+        std::cout<<"position cube " << pos_objet <<std::endl;
+        std::cout<<"position obstacle "<< pos_ob <<std::endl;
+        if((int)p_ob.x >= (int)pos_objet.x - 5 && (int)p_ob.x <= (int)pos_objet.x + 5 &&  (int)p_ob.y >= (int)pos_objet.y - 5 &&  (int)p_ob.y <= (int)pos_objet.y + 5 && (int)p_ob.z >= (int)pos_objet.z - 5 && (int)p_ob.z <= (int)pos_objet.z + 5 && alpha%360 >= 10 && alpha%360 <= 30) {
+            draw(objet, b1.T, view, projection) ;
+            draw(objet, b2.T, view, projection) ;
+        } else {
+            draw(red, b1.T, view, projection) ;
+            draw(red, b2.T, view, projection) ;
+        }
+
+
 
         return 1;
     }
@@ -354,6 +396,10 @@ protected:
     int alpha;
     int indice;
     unsigned int lastTime = 0;
+    Mesh red ;
+
+    Box b1 ;
+    Box b2 ;
 
 };
 
