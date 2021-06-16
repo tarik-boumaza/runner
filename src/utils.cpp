@@ -1,3 +1,19 @@
+#include "mesh.h"
+#include "orbiter.h"
+#include "program.h"
+#include "uniforms.h"
+#include "draw.h"
+#include "text.h"
+#include "box.hpp"
+#include "app_camera.h"      // classe Application a deriver
+#include "wavefront.h"
+#include "mat.h"
+
+#include <time.h>
+#include <stdlib.h>
+#include <iostream>
+#include <cmath>        // std::abs
+
 static void  chaikin(std::vector<Point> & points){
   std::vector<Point> res;
   res.push_back(points[0]);
@@ -71,21 +87,71 @@ static void generation_cercles(std::vector<Point> & points, std::vector<Vector> 
 }
 
 
-static void dessine_triangles(Mesh& m, const std::vector<std::vector<Point>> & cercles, const std::vector<std::vector<Vector>> & norm){
+static float getNormeX(const Point & p1, const Point & p2)
+{
+    return abs(p1.x - p2.x);
+}
+
+static float getNormeY(const Point & p1, const Point & p2)
+{
+    return abs(p1.y - p2.y);
+}
+
+static float getNormeZ(const Point & p1, const Point & p2)
+{
+    return abs(p1.z - p2.z);
+}
+
+static float getNorme(const Point & p1, const Point & p2) {
+  return sqrt( (p1.x - p2.x)*(p1.x - p2.x)
+              + (p1.y - p2.y)*(p1.y - p2.y)
+              + (p1.z - p2.z)*(p1.z - p2.z) );
+}
+
+
+static float longueur_tube(const std::vector<Point> & points) {
+  double longueur = 0.0;
+  unsigned int i = 0;
+  while((abs(getNorme(points[0],points[i])) > 0.01
+          || i < 50)
+        && i < points.size()) {
+    longueur += getNormeZ(points[i], points[i+1]);
+    i++;
+  }
+  //longueur += getNormeZ(points[0],points[points.size()-1]);
+  return longueur;
+}
+
+static void dessine_triangles(Mesh& m, const std::vector<std::vector<Point>> & cercles, const std::vector<std::vector<Vector>> & norm, const float & lgt){
   unsigned int i, j,a, b, c, d, la, lb, lc, ld;
+  float lgp = 0.0;
+  float lgps = 0.0;
+  float ang,angs;
+
   for(i = 0; i < cercles.size() - 1; i++){
+    if(i > 0) {
+      lgp += getNorme(cercles[i][1], cercles[i+1][1]);
+    }
+    lgps = lgp + getNorme(cercles[i][1], cercles[i+1][1]);
+
     for(j = 0; j < cercles[i].size() - 1; j++){
-      a = m.normal(norm[i][j]).vertex(cercles[i][j]);
-      b = m.normal(norm[i+1][j]).vertex(cercles[i+1][j]);
-      c = m.normal(norm[i+1][j+1]).vertex(cercles[i+1][j+1]);
-      d = m.normal(norm[i][j+1]).vertex(cercles[i][j+1]);
+      ang = (j*30)/360;
+      angs = ((j+1)*30)/360;
+      std::cout<<lgp/lgt << " , " << ang << std::endl;
+      a = m.texcoord(lgp/lgt, ang).normal(norm[i][j]).vertex(cercles[i][j]);
+      b = m.texcoord(lgps/lgt, ang).normal(norm[i+1][j]).vertex(cercles[i+1][j]);
+      c = m.texcoord(lgps/lgt, angs).normal(norm[i+1][j+1]).vertex(cercles[i+1][j+1]);
+      d = m.texcoord(lgp/lgt, angs).normal(norm[i][j+1]).vertex(cercles[i][j+1]);
+
       m.triangle(a,c,b);
       m.triangle(a,d,c);
+
       if(j == cercles[i].size() - 2){
-        la = m.normal(norm[i][j+1]).vertex(cercles[i][j+1]);
-        lb = m.normal(norm[i+1][j+1]).vertex(cercles[i+1][j+1]);
-        lc = m.normal(norm[i+1][0]).vertex(cercles[i+1][0]);
-        ld = m.normal(norm[i][0]).vertex(cercles[i][0]);
+        la = m.texcoord(lgp/lgt, angs).normal(norm[i][j+1]).vertex(cercles[i][j+1]);
+        lb = m.texcoord(lgps/lgt, angs).normal(norm[i+1][j+1]).vertex(cercles[i+1][j+1]);
+        lc = m.texcoord(lgps/lgt, 0).normal(norm[i+1][0]).vertex(cercles[i+1][0]);
+        ld = m.texcoord(lgp/lgt, 0).normal(norm[i][0]).vertex(cercles[i][0]);
+
         m.triangle(la,lc,lb);
         m.triangle(la,ld,lc);
       }

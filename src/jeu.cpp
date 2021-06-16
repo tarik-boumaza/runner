@@ -1,17 +1,5 @@
 #include "tube.cpp"
-#include "orbiter.h"
-#include "program.h"
-#include "uniforms.h"
-#include "draw.h"
-#include "text.h"
-#include "box.hpp"
-#include "app_camera.h"      // classe Application a deriver
-#include "wavefront.h"
-#include "mat.h"
-
-#include <time.h>
-#include <stdlib.h>
-#include <iostream>
+#include "texture.h"
 
 class Jeu : public AppCamera
 {
@@ -63,6 +51,7 @@ public:
 
 
       console = create_text();
+      texture_route = read_texture(0, "projet/data/road.png");
 
 
       // regle le point de vue de la camera pour observer l'tube
@@ -85,6 +74,7 @@ public:
         m_tube.release();
         objet.release();
         release_text(console);
+        glDeleteTextures(1, &texture_route);
         return 0;
     }
 
@@ -144,6 +134,8 @@ public:
       program_uniform(program, "mvpMatrix", mvp);
       program_uniform(program, "modelMatrix", model);
       program_uniform(program, "viewInvMatrix", Inverse(view));
+       //   . utilisation d'une texture configuree sur l'unite 0, le fragment shader declare "uniform sampler2D texture0;"
+      program_use_texture(program, "texture0", 0, texture_route);
       //   . ou, directement en utilisant openGL :
       //   int location= glGetUniformLocation(program, "mvpMatrix");
       //   glUniformMatrix4fv(location, 1, GL_TRUE, mvp.buffer());
@@ -192,6 +184,7 @@ public:
 protected:
   Tube tube;
   Mesh m_tube;
+  GLuint texture_route;
   Mesh objet;
   Mesh obstacle;
   GLuint texture;

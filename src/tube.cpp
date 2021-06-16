@@ -1,8 +1,4 @@
-#include "mesh.h"
 #include "utils.cpp"
-
-#include <cmath>        // std::abs
-
 
 class Tube {
 
@@ -52,7 +48,8 @@ class Tube {
 
       m_tube= Mesh(GL_TRIANGLES);
       //génération et dessin des trianges
-      dessine_triangles(m_tube, cercles, norm);
+      float longueur = longueur_tube(points);
+      dessine_triangles(m_tube, cercles, norm, longueur);
     }
 
     Point getPoint(const unsigned int i) {
