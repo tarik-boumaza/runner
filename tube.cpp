@@ -184,7 +184,7 @@ public:
         }
 
         //charge l'objet
-        objet= read_mesh("data/cube.obj");
+        objet= read_mesh("projet/data/voiture.obj");
         //objet.default_color(Green()) ;
 
         Point pmin_box, pmax_box ;
@@ -193,7 +193,7 @@ public:
         b1 = Box(pmin_box, pmax_box) ;
 
         //charger les obstacles
-        obstacle = read_mesh("data/obstacle.obj");
+        obstacle = read_mesh("projet/data/obstacle.obj");
         obstacle.bounds(pmin_box, pmax_box) ;
 
         for(int i = 0; i < 5; i++) {
@@ -274,7 +274,7 @@ public:
         Vector na(R(n));
         Point pos_objet = p + r * na;
 
-        Transform m_transform_objet = atlook(pos_objet, pos_objet + d, na)*Translation(0,r/8,0)*Scale(0.2,0.2,0.2);
+        Transform m_transform_objet = atlook(pos_objet, pos_objet + d, na)*Translation(0,r/8,0)*Scale(2,2,2);
 
         Transform m_transform_camera = Translation(2*na)*Translation(50*d);
         // etape 2 : dessiner tube avec le shader program
