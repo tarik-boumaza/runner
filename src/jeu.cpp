@@ -28,6 +28,8 @@ public:
 
       //charger les obstacles
       obstacle = read_mesh("projet/data/obstacle.obj");
+      obstacle.default_color(Red());
+
       obstacle.bounds(pmin_box, pmax_box) ;
 
       for(unsigned int i = 0; i < nb_obstacles; i++) {
@@ -149,7 +151,7 @@ public:
       // go !
       // indiquer quels attributs de sommets du mesh sont necessaires a l'execution du shader.
       // tuto9_color.glsl n'utilise que position. les autres de servent a rien.
-      m_tube.draw(program, /* use position */ true, /* use texcoord */ false, /* use normal */ true, /* use color */ false, /* use material index*/ false);
+      m_tube.draw(program, /* use position */ true, /* use texcoord */true, /* use normal */ true, /* use color */ false, /* use material index*/ false);
       draw(objet, m_transform_objet,/*camera()*/ view, projection);
 
 
