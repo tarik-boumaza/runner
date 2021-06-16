@@ -4,6 +4,8 @@
 #include "mat.h"
 #include "mesh.h"
 #include "wavefront.h"
+#include "texture.h"
+
 
 #include "orbiter.h"
 #include "program.h"
@@ -94,22 +96,71 @@ void generation_cercles(std::vector<Point> & points, std::vector<Vector> & ortho
   }
 }
 
+static float getNormeX(const Point & p1, const Point & p2)
+{
+    return abs(p1.x - p2.x);
+}
 
-void dessine_triangles(Mesh& m, const std::vector<std::vector<Point>> & cercles, const std::vector<std::vector<Vector>> & norm){
+static float getNormeY(const Point & p1, const Point & p2)
+{
+    return abs(p1.y - p2.y);
+}
+
+static float getNormeZ(const Point & p1, const Point & p2)
+{
+    return abs(p1.z - p2.z);
+}
+
+static float getNorme(const Point & p1, const Point & p2) {
+  return sqrt( (p1.x - p2.x)*(p1.x - p2.x)
+              + (p1.y - p2.y)*(p1.y - p2.y)
+              + (p1.z - p2.z)*(p1.z - p2.z) );
+}
+
+
+float longueur_tube(const std::vector<Point> & points) {
+  double longueur = 0.0;
+  unsigned int i = 0;
+  while((abs(getNorme(points[0],points[i])) > 0.01
+          || i < 50)
+        && i < points.size()) {
+    longueur += getNormeZ(points[i], points[i+1]);
+    i++;
+  }
+  //longueur += getNormeZ(points[0],points[points.size()-1]);
+  return longueur;
+}
+
+void dessine_triangles(Mesh& m, const std::vector<std::vector<Point>> & cercles, const std::vector<std::vector<Vector>> & norm, const float & lgt){
   unsigned int i, j,a, b, c, d, la, lb, lc, ld;
+  float lgp = 0.0;
+  float lgps = 0.0;
+  float ang,angs;
+
   for(i = 0; i < cercles.size() - 1; i++){
+    if(i > 0) {
+      lgp += getNorme(cercles[i][1], cercles[i+1][1]);
+    }
+    lgps = lgp + getNorme(cercles[i][1], cercles[i+1][1]);
+
     for(j = 0; j < cercles[i].size() - 1; j++){
-      a = m.normal(norm[i][j]).vertex(cercles[i][j]);
-      b = m.normal(norm[i+1][j]).vertex(cercles[i+1][j]);
-      c = m.normal(norm[i+1][j+1]).vertex(cercles[i+1][j+1]);
-      d = m.normal(norm[i][j+1]).vertex(cercles[i][j+1]);
+      ang = (j*30)/360;
+      angs = ((j+1)*30)/360;
+      std::cout<<lgp/lgt << " , " << ang << std::endl;
+      a = m.texcoord(lgp/lgt, ang).normal(norm[i][j]).vertex(cercles[i][j]);
+      b = m.texcoord(lgps/lgt, ang).normal(norm[i+1][j]).vertex(cercles[i+1][j]);
+      c = m.texcoord(lgps/lgt, angs).normal(norm[i+1][j+1]).vertex(cercles[i+1][j+1]);
+      d = m.texcoord(lgp/lgt, angs).normal(norm[i][j+1]).vertex(cercles[i][j+1]);
+
       m.triangle(a,c,b);
       m.triangle(a,d,c);
+
       if(j == cercles[i].size() - 2){
-        la = m.normal(norm[i][j+1]).vertex(cercles[i][j+1]);
-        lb = m.normal(norm[i+1][j+1]).vertex(cercles[i+1][j+1]);
-        lc = m.normal(norm[i+1][0]).vertex(cercles[i+1][0]);
-        ld = m.normal(norm[i][0]).vertex(cercles[i][0]);
+        la = m.texcoord(lgp/lgt, angs).normal(norm[i][j+1]).vertex(cercles[i][j+1]);
+        lb = m.texcoord(lgps/lgt, angs).normal(norm[i+1][j+1]).vertex(cercles[i+1][j+1]);
+        lc = m.texcoord(lgps/lgt, 0).normal(norm[i+1][0]).vertex(cercles[i+1][0]);
+        ld = m.texcoord(lgp/lgt, 0).normal(norm[i][0]).vertex(cercles[i][0]);
+
         m.triangle(la,lc,lb);
         m.triangle(la,ld,lc);
       }
@@ -169,7 +220,9 @@ public:
 
         tube= Mesh(GL_TRIANGLES);
         //génération et dessin des trianges
-        dessine_triangles(tube, cercles, norm);
+        float longueur = longueur_tube(points);
+        std::cout<<longueur<<std::endl;
+        dessine_triangles(tube, cercles, norm, longueur);
 
         int random;
         // Initialisation du tableau d'obstacles
@@ -199,10 +252,6 @@ public:
 
         finJeu = false;
 
-        // etape 1 : creer le shader program
-        program= read_program("projet/shaders/tube_color.glsl");
-        program_print_errors(program);
-
         // etape 2 : creer une camera pour observer l'tube
         // construit l'englobant de l'tube, les extremites de sa boite englobante
         Point pmin, pmax;
@@ -211,6 +260,12 @@ public:
 
         console = create_text();
 
+        texture_route = read_texture(0, "projet/data/road.png");
+
+
+        // etape 1 : creer le shader program
+        program= read_program("projet/shaders/tube_color.glsl");
+        program_print_errors(program);
 
         // regle le point de vue de la camera pour observer l'tube
         //camera().lookat(pmin, pmax);
@@ -233,6 +288,7 @@ public:
         tube.release();
         objet.release();
         release_text(console);
+        glDeleteTextures(1, &texture_route);
         return 0;
     }
 
@@ -294,6 +350,8 @@ public:
       program_uniform(program, "mvpMatrix", mvp);
       program_uniform(program, "modelMatrix", model);
       program_uniform(program, "viewInvMatrix", Inverse(view));
+      //   . utilisation d'une texture configuree sur l'unite 0, le fragment shader declare "uniform sampler2D texture0;"
+      program_use_texture(program, "texture0", 0, texture_route);
       //   . ou, directement en utilisant openGL :
       //   int location= glGetUniformLocation(program, "mvpMatrix");
       //   glUniformMatrix4fv(location, 1, GL_TRUE, mvp.buffer());
@@ -307,7 +365,7 @@ public:
       // go !
       // indiquer quels attributs de sommets du mesh sont necessaires a l'execution du shader.
       // tuto9_color.glsl n'utilise que position. les autres de servent a rien.
-      tube.draw(program, /* use position */ true, /* use texcoord */ false, /* use normal */ true, /* use color */ false, /* use material index*/ false);
+      tube.draw(program, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false, /* use material index*/ false);
       draw(objet, m_transform_objet,/*camera()*/ view, projection);
 
 
@@ -428,7 +486,7 @@ protected:
     Mesh tube;
     Mesh objet;
     Mesh obstacle;
-    GLuint texture;
+    GLuint texture_route;
     GLuint program;
     std::vector<Point> points;
     int derniere_direction;
