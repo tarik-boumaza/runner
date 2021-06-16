@@ -48,12 +48,10 @@ void vecteur_orthogonal (std::vector<Point> & points, std::vector<Vector> & orth
   Vector v(1,0,0);
   Vector d = normalize(cross(a0,v));
   if (abs(d.x - 0.0) < 0.1 && abs(d.y - 0.0) < 0.1 && abs(d.y - 0.0) < 0.1) {
-    std::cout << "orthogonaux!" << std::endl;
-    v = Vector(1,0,0);
+    v = Vector(0,1,0);
     d = normalize(cross(a0,v));
     if (abs(d.x - 0.0) < 0.1 && abs(d.y - 0.0) < 0.1 && abs(d.y - 0.0) < 0.1) {
-      std::cout << "2" << std::endl;
-      v = Vector(0,1,0);
+      v = Vector(0,0,1);
       d = normalize(cross(a0,v));
     }
   }
@@ -175,9 +173,8 @@ public:
 
         int random;
         // Initialisation du tableau d'obstacles
-        for(int i = 0; i < 5; i++) {
-          random = rand()%(points.size()-2000) + 1000;
-          std::cout << random << std::endl;
+        for(int i = 0; i < 20; i++) {
+          random = rand()%(points.size()-1500) + 600;
           obstacles.push_back(random);
           random = rand()% 360;
           angles.push_back(random);
@@ -196,7 +193,7 @@ public:
         obstacle = read_mesh("projet/data/obstacle.obj");
         obstacle.bounds(pmin_box, pmax_box) ;
 
-        for(int i = 0; i < 5; i++) {
+        for(int i = 0; i < 20; i++) {
           boxes.push_back(Box(pmin_box, pmax_box));
         }
 
@@ -243,128 +240,182 @@ public:
     int render( )
     {
 
-      std::cout << indice << std::endl;
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        if(!finJeu){
-          indice += 2*niveau + 2;
-        }
-        //generation_nouveaux_points()
-        if (indice > points.size() - 1) {
-          niveau += 1;
-          indice = 10;
-        }
-
+      if(!finJeu){
+        indice += 2*niveau + 2;
         std::string str = "Niveau " + std::to_string(niveau);
         char char_array[str.size() + 5];
         strcpy(char_array, str.c_str());
         printf(console, 0, 0, char_array);
         draw(console, window_width(), window_height());
-
-        Point p = points[indice];
-        Vector d(points[(indice+1)], points[indice]);
-
         if(key_state(SDLK_LEFT))
-            alpha = (alpha + 2) % 360;     // tourne vers la gauche
+          alpha = (alpha + 2) % 360;     // tourne vers la gauche
         if(key_state(SDLK_RIGHT))
-            alpha = (alpha - 2) % 360;      // tourne vers la droite
+          alpha = (alpha - 2) % 360;      // tourne vers la droite
+      }
 
-        Transform R = Rotation(d,alpha);
-        Vector n(orthogonaux[indice]);
-        Vector na(R(n));
-        Point pos_objet = p + r * na;
+      if (indice > points.size() - 1) {
+        niveau += 1;
+        indice = 10;
+      }
 
-        Transform m_transform_objet = atlook(pos_objet, pos_objet + d, na)*Translation(0,r/8,0)*Scale(2,2,2);
+      Point p = points[indice];
+      Vector d(points[(indice+1)], points[indice]);
 
-        Transform m_transform_camera = Translation(2*na)*Translation(50*d);
-        // etape 2 : dessiner tube avec le shader program
-        // configurer le pipeline
-        glUseProgram(program);
+      Transform R = Rotation(d,alpha);
+      Vector n(orthogonaux[indice]);
+      Vector na(R(n));
+      Point pos_objet = p + r * na;
 
-        // configurer le shader program
-        // . recuperer les transformations
+      Transform m_transform_objet = atlook(pos_objet, pos_objet + d, na)*Translation(0,r/6,0)*Scale(2,2,2);
 
-        /*Transform model= Identity();
-        Transform view= camera().view();
-        Transform projection= camera().projection(window_width(), window_height(), 45);*/
+      Transform m_transform_camera = Translation(2*na)*Translation(50*d);
 
-        Transform model= Identity();
-        Transform view= Lookat(m_transform_camera(pos_objet),pos_objet, na);
-        Transform projection= Perspective(90, (float) window_width() / (float) window_height(), .1f, 1000.f);
+      // etape 2 : dessiner tube avec le shader program
+      // configurer le pipeline
+      glUseProgram(program);
 
-        // . composer les transformations : model, view et projection
+      // configurer le shader program
+      // . recuperer les transformations
+      /*Transform model= Identity();
+      Transform view= camera().view();
+      Transform projection= camera().projection(window_width(), window_height(), 45);*/
 
+      Transform model= Identity();
+      Transform view= Lookat(m_transform_camera(pos_objet),pos_objet, na);
+      Transform projection= Perspective(90, (float) window_width() / (float) window_height(), .1f, 1000.f);
 
-        Transform mvp= projection * view * model;
+      // . composer les transformations : model, view et projection
+      Transform mvp= projection * view * model;
 
-        // . parametrer le shader program :
-        //   . transformation : la matrice declaree dans le vertex shader s'appelle mvpMatrix
-        program_uniform(program, "mvpMatrix", mvp);
-        program_uniform(program, "modelMatrix", model);
-        program_uniform(program, "viewInvMatrix", Inverse(view));
-        //   . ou, directement en utilisant openGL :
-        //   int location= glGetUniformLocation(program, "mvpMatrix");
-        //   glUniformMatrix4fv(location, 1, GL_TRUE, mvp.buffer());
+      // . parametrer le shader program :
+      //   . transformation : la matrice declaree dans le vertex shader s'appelle mvpMatrix
+      program_uniform(program, "mvpMatrix", mvp);
+      program_uniform(program, "modelMatrix", model);
+      program_uniform(program, "viewInvMatrix", Inverse(view));
+      //   . ou, directement en utilisant openGL :
+      //   int location= glGetUniformLocation(program, "mvpMatrix");
+      //   glUniformMatrix4fv(location, 1, GL_TRUE, mvp.buffer());
+      // . parametres "supplementaires" :
+      //   . couleur des pixels, cf la declaration 'uniform vec4 color;' dans le fragment shader
+      //program_uniform(program, "color", vec4(1, 1, 0, 1));
+      //   . ou, directement en utilisant openGL :
+      //   int location= glGetUniformLocation(program, "color");
+      //   glUniform4f(location, 1, 1, 0, 1);
 
-        // . parametres "supplementaires" :
-        //   . couleur des pixels, cf la declaration 'uniform vec4 color;' dans le fragment shader
-        //program_uniform(program, "color", vec4(1, 1, 0, 1));
-        //   . ou, directement en utilisant openGL :
-        //   int location= glGetUniformLocation(program, "color");
-        //   glUniform4f(location, 1, 1, 0, 1);
-
-
-        // go !
-        // indiquer quels attributs de sommets du mesh sont necessaires a l'execution du shader.
-        // tuto9_color.glsl n'utilise que position. les autres de servent a rien.
-        tube.draw(program, /* use position */ true, /* use texcoord */ false, /* use normal */ true, /* use color */ false, /* use material index*/ false);
-        draw(objet, m_transform_objet,/*camera()*/ view, projection);
-
-
-        /////////////////////////////////////  Ajout d'obstacle /////////////////////////////////
-        std::vector<Transform> m_transform_obstacles;
-        for(int i = 0; i < obstacles.size(); i++) {
-          Point p_ob = points[obstacles[i]];
-          Vector d_ob(points[obstacles[i]], points[obstacles[i]+1]);
-
-          Transform R_ob = Rotation(d_ob, angles[i]);
-          Vector n_ob(orthogonaux[obstacles[i]]);
-          Vector na_ob(R_ob(n_ob));
-          Point pos_ob = p_ob + r * na_ob;
-
-          boxes[i].T = atlook(pos_ob, pos_ob + d_ob, na_ob)*Translation(0,0.05,0)*Scale(0.1,0.1,0.1);
-          draw(obstacle, boxes[i].T,/*camera()*/ view, projection);
-        }
+      // go !
+      // indiquer quels attributs de sommets du mesh sont necessaires a l'execution du shader.
+      // tuto9_color.glsl n'utilise que position. les autres de servent a rien.
+      tube.draw(program, /* use position */ true, /* use texcoord */ false, /* use normal */ true, /* use color */ false, /* use material index*/ false);
+      draw(objet, m_transform_objet,/*camera()*/ view, projection);
 
 
+      /////////////////////////////////////  Ajout d'obstacle /////////////////////////////////
+      std::vector<Transform> m_transform_obstacles;
+      for(int i = 0; i < obstacles.size(); i++) {
+        Point p_ob = points[obstacles[i]];
+        Vector d_ob(points[obstacles[i]], points[obstacles[i]+1]);
+        Transform R_ob = Rotation(d_ob, angles[i]);
+        Vector n_ob(orthogonaux[obstacles[i]]);
+        Vector na_ob(R_ob(n_ob));
+        Point pos_ob = p_ob + r * na_ob;
 
+        boxes[i].T = atlook(pos_ob, pos_ob + d_ob, na_ob)*Translation(0,0.05,0)*Scale(0.1,0.1,0.1);
+        draw(obstacle, boxes[i].T,/*camera()*/ view, projection);
+      }
 
-        ////////////////////////////////// Collision ///////////////////////////
+      ////////////////////////////////// Collision ///////////////////////////
+      if (!finJeu) {
         b1.T = m_transform_objet ;
-
         for(int i = 0; i < boxes.size(); i++) {
           if(b1.collides(boxes[i])) {
             finJeu = true;
-            std::cout << "Collision" << std::endl;
           }
         }
+      }
 
-
-        return 1;
+      return 1;
     }
 
     Transform atlook (const Point & from, const Point & d, const Vector & up)
     {
-          Vector dir= normalize( Vector(from, d) );
-          Vector right= normalize( cross(dir, normalize(up)) );
-          Vector newUp= normalize( cross(right, dir) );
 
-          return Transform (
-              right.x, newUp.x, -dir.x, from.x,
-              right.y, newUp.y, -dir.y, from.y,
-              right.z, newUp.z, -dir.z, from.z,
-              0,       0,        0,     1);
+      Vector dir= Vector(from, d);
+      Vector right= cross(dir, normalize(up));
+      Vector newUp= cross(right, dir);
+
+      if (dir.x != 0.0 || dir.y != 0.0 || dir.z != 0.0) {
+         dir= normalize(dir);
+      }
+      else {
+        dir = Vector(0.0,0.0,0.1);
+        dir = normalize(dir);
+      }
+
+      if (right.x != 0.0 || right.y != 0.0 || right.z != 0.0) {
+        right= normalize(right);
+      }
+      else {
+        right = Vector(0.1,0.0,0.0);
+        right = normalize(right);
+      }
+
+      if (newUp.x != 0.0 || newUp.y != 0.0 || newUp.z != 0.0) {
+        newUp= normalize(newUp);
+      }
+      else {
+        newUp = Vector(0.0,0.1,0.0);
+        newUp = normalize(newUp);
+      }
+
+      return Transform (
+            right.x, newUp.x, -dir.x, from.x,
+            right.y, newUp.y, -dir.y, from.y,
+            right.z, newUp.z, -dir.z, from.z,
+            0,       0,        0,     1);
     }
+
+    Transform Lookat (const Point & from, const Point & d, const Vector & up)
+    {
+
+      Vector dir= Vector(from, d);
+      Vector right= cross(dir, normalize(up));
+      Vector newUp= cross(right, dir);
+
+      if (dir.x != 0.0 || dir.y != 0.0 || dir.z != 0.0) {
+         dir= normalize(dir);
+      }
+      else {
+        dir = Vector(0.0,0.0,0.1);
+        dir = normalize(dir);
+      }
+
+      if (right.x != 0.0 || right.y != 0.0 || right.z != 0.0) {
+         right= normalize(right);
+      }
+      else {
+        right = Vector(0.1,0.0,0.0);
+        right = normalize(right);
+      }
+
+      if (newUp.x != 0.0 || newUp.y != 0.0 || newUp.z != 0.0) {
+         newUp= normalize(newUp);
+      }
+      else {
+        newUp = Vector(0.0,0.1,0.0);
+        newUp = normalize(newUp);
+      }
+
+      Transform m(
+            right.x, newUp.x, -dir.x, from.x,
+            right.y, newUp.y, -dir.y, from.y,
+            right.z, newUp.z, -dir.z, from.z,
+            0,       0,        0,     1);
+
+      return m.inverse();
+    }
+
 
     static double getNorme(const Vector & p1)
     {
