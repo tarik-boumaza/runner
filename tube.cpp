@@ -175,8 +175,9 @@ public:
 
         int random;
         // Initialisation du tableau d'obstacles
-        for(int i = 0; i < 30; i++) {
-          random = rand()%(points.size()-1000) + 1000;
+        for(int i = 0; i < 5; i++) {
+          random = rand()%(points.size()-2000) + 1000;
+          std::cout << random << std::endl;
           obstacles.push_back(random);
           random = rand()% 360;
           angles.push_back(random);
@@ -184,21 +185,22 @@ public:
 
         //charge l'objet
         objet= read_mesh("data/cube.obj");
-        objet.default_color(Green()) ;
-
-        obstacle = read_mesh("data/obstacle.obj");
-
-        red = read_mesh("data/cube.obj") ;
-        red.default_color(Red()) ;
+        //objet.default_color(Green()) ;
 
         Point pmin_box, pmax_box ;
         objet.bounds(pmin_box, pmax_box) ;
+
         b1 = Box(pmin_box, pmax_box) ;
-        for(int i = 0; i < 30; i++) {
+
+        //charger les obstacles
+        obstacle = read_mesh("data/obstacle.obj");
+        obstacle.bounds(pmin_box, pmax_box) ;
+
+        for(int i = 0; i < 5; i++) {
           boxes.push_back(Box(pmin_box, pmax_box));
         }
 
-
+        finJeu = false;
 
         // etape 1 : creer le shader program
         program= read_program("projet/shaders/tube_color.glsl");
@@ -208,7 +210,9 @@ public:
         // construit l'englobant de l'tube, les extremites de sa boite englobante
         Point pmin, pmax;
         tube.bounds(pmin, pmax);
-        indice = 10;
+        indice = 100;
+
+        console = create_text();
 
 
         // regle le point de vue de la camera pour observer l'tube
@@ -238,9 +242,13 @@ public:
     // dessiner une nouvelle image
     int render( )
     {
+
+      std::cout << indice << std::endl;
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        indice += 2*niveau + 2;
+        if(!finJeu){
+          indice += 2*niveau + 2;
+        }
         //generation_nouveaux_points()
         if (indice > points.size() - 1) {
           niveau += 1;
@@ -249,7 +257,6 @@ public:
 
         std::string str = "Niveau " + std::to_string(niveau);
         char char_array[str.size() + 5];
-        console = create_text();
         strcpy(char_array, str.c_str());
         printf(console, 0, 0, char_array);
         draw(console, window_width(), window_height());
@@ -267,7 +274,7 @@ public:
         Vector na(R(n));
         Point pos_objet = p + r * na;
 
-        Transform m_transform_objet = atlook(pos_objet, pos_objet + d, na)*Translation(0,r/8,0)*Scale(0.09,0.09,0.09);
+        Transform m_transform_objet = atlook(pos_objet, pos_objet + d, na)*Translation(0,r/8,0)*Scale(0.2,0.2,0.2);
 
         Transform m_transform_camera = Translation(2*na)*Translation(50*d);
         // etape 2 : dessiner tube avec le shader program
@@ -325,25 +332,22 @@ public:
           Vector na_ob(R_ob(n_ob));
           Point pos_ob = p_ob + r * na_ob;
 
-          Transform m_transform_obstacle = atlook(pos_ob, pos_ob + d_ob, na_ob)*Translation(0,0.05,0)*Scale(0.1,0.1,0.1);
-          draw(obstacle, m_transform_obstacle,/*camera()*/ view, projection);
+          boxes[i].T = atlook(pos_ob, pos_ob + d_ob, na_ob)*Translation(0,0.05,0)*Scale(0.1,0.1,0.1);
+          draw(obstacle, boxes[i].T,/*camera()*/ view, projection);
         }
 
 
 
 
         ////////////////////////////////// Collision ///////////////////////////
-        /*b1.T = m_transform_objet ;
+        b1.T = m_transform_objet ;
 
         for(int i = 0; i < boxes.size(); i++) {
           if(b1.collides(boxes[i])) {
-              draw(red, b1.T, view, projection) ;
-              draw(red, boxes[i].T, view, projection) ;
-          } else {
-              draw(objet, b1.T, view, projection) ;
-              draw(red, boxes[i].T, view, projection) ;
+            finJeu = true;
+            std::cout << "Collision" << std::endl;
           }
-        }*/
+        }
 
 
         return 1;
@@ -386,8 +390,8 @@ protected:
     unsigned int lastTime = 0;
     std::vector<int> obstacles;
     std::vector<int> angles;
+    bool finJeu;
 
-    Mesh red;
     Box b1;
     std::vector<Box> boxes;
 
