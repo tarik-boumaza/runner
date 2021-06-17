@@ -233,3 +233,21 @@ static Transform lookat (const Point & from, const Point & d, const Vector & up)
 
       return m.inverse();
 }
+
+static void play_sound() {
+  SDL_AudioSpec wav_spec;
+  Uint32 wav_length;
+  Uint8 *wav_buffer;
+  // Load the WAV //
+  if (SDL_LoadWAV("projet/data/crash.wav", &wav_spec, &wav_buffer, &wav_length) == NULL) {
+      fprintf(stderr, "Could not open test.wav: %s\n", SDL_GetError());
+  } else {
+      // Do stuff with the WAV data, and then... //
+      SDL_AudioDeviceID deviceId = SDL_OpenAudioDevice(NULL, 0, &wav_spec, NULL, 0);
+      int success = SDL_QueueAudio(deviceId, wav_buffer, wav_length);
+      SDL_PauseAudioDevice(deviceId, 0);
+      SDL_Delay(3000);
+      SDL_CloseAudioDevice(deviceId);
+      SDL_FreeWAV(wav_buffer);
+  }
+}
