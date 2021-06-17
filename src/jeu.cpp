@@ -13,13 +13,12 @@ public:
     {
 
       srand(time(NULL));
-
       // Initialisation du tube
       tube.init();
       m_tube = tube.getMesh();
 
       // Charger la voiture
-      objet= read_mesh("projet/data/car.obj");
+      objet= read_mesh("projet/data/obj/car.obj");
 
       // Initialisation du tableau d'obstacles
       nb_obstacles = 35;
@@ -32,7 +31,7 @@ public:
       b1 = Box(pmin_box, pmax_box) ;
 
       // Charger les obstacles
-      obstacle = read_mesh("projet/data/obstacle.obj");
+      obstacle = read_mesh("projet/data/obj/obstacle.obj");
       obstacle.default_color(Red());
 
       // Boites englobantes des obstacles
@@ -52,7 +51,6 @@ public:
 
 
       /*** Shader ***/
-
       // Creer le shader program pour le tube
       program = read_program("projet/src/shaders/tube_color.glsl");
       program_print_errors(program);
@@ -68,17 +66,17 @@ public:
 
       /*** Textures ***/
 
-      texture_route = read_texture(0, "projet/data/route.jpg");
+      texture_route = read_texture(0, "projet/data/textures/route.jpg");
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-      texture_drapeau = read_texture(1, "projet/data/drapeau.jpg");
+      texture_drapeau = read_texture(1, "projet/data/textures/drapeau.jpg");
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-      texture_voiture = read_texture(0, "projet/data/bleu-peint.jpg");
+      texture_voiture = read_texture(0, "projet/data/textures/bleu-peint.jpg");
 
-      texture_obstacle =  read_texture(0, "projet/data/couleur_barriere.jpg");
+      texture_obstacle =  read_texture(0, "projet/data/textures/couleur_barriere.jpg");
 
 
       // etat openGL par defaut
