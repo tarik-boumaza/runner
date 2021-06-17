@@ -32,9 +32,7 @@ uniform mat4 viewInvMatrix;
 uniform sampler2D texture0;
 
 const vec3 emission= vec3(1);
-const float k= 0.8;
-
-const float PI= 3.14159265359;
+const float k= 1;
 
 out vec4 fragment_color;
 void main( )
@@ -49,12 +47,11 @@ void main( )
     float cos_theta= max(0, dot(normalize(n), l));
 
     // brdf
-    float fr= k / PI;
-    //vec3 color= emission * fr * cos_theta;
+    float fr= k;
+    vec4 brdf= vec4(emission * fr * cos_theta, 1);
 
-    //fragment_color= vec4(color, 1);
 
     vec4 color= texture(texture0, vertex_texcoord);
-    fragment_color= color;
+    fragment_color= color*brdf;
 }
 #endif

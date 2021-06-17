@@ -30,6 +30,8 @@ public:
 
       //charger les obstacles
       obstacle = read_mesh("projet/data/obstacle.obj");
+      obstacle.default_color(Red());
+
       obstacle.bounds(pmin_box, pmax_box) ;
 
       for(unsigned int i = 0; i < nb_obstacles; i++) {
@@ -43,9 +45,14 @@ public:
       indice = 10;
 
       // etape 1 : creer le shader program
-      program= read_program("projet/src/shaders/tube_color.glsl");
+      program = read_program("projet/src/shaders/tube_color.glsl");
       program_print_errors(program);
 
+      program_voiture = read_program("projet/src/shaders/texture.glsl");
+      program_print_errors(program_voiture);
+
+      program_obstacle = read_program("projet/src/shaders/texture.glsl");
+      program_print_errors(program_obstacle);
       // etape 2 : creer une camera pour observer l'tube
       // construit l'englobant de l'tube, les extremites de sa boite englobante
       Point pmin, pmax;
@@ -53,7 +60,13 @@ public:
 
 
       console = create_text();
-      texture_route = read_texture(0, "projet/data/road.png");
+      texture_route = read_texture(0, "projet/data/route3-min.jpg");
+
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+      texture_voiture = read_texture(0, "projet/data/couleur-voiture.jpg");
+      texture_obstacle =  read_texture(0, "projet/data/couleur_barriere.jpg");
 
 
       // regle le point de vue de la camera pour observer l'tube
@@ -75,8 +88,9 @@ public:
         release_program(program);
         m_tube.release();
         objet.release();
-        glDeleteTextures(1, &texture_route);
         release_text(console);
+        glDeleteTextures(1, &texture_route);
+        glDeleteTextures(1, &texture_voiture);
         return 0;
     }
 
@@ -87,20 +101,20 @@ public:
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
       if (!finJeu){
-        indice += niveau + 2;
+        indice += niveau + 4;
         if (indice > tube.getNbPoints() - 2) {
           niveau += 1;
           indice = 1;
         }
-        std::string str = "En cours : NIVEAU " + std::to_string(niveau);
-        char char_array[str.size() + 5];
-        strcpy(char_array, str.c_str());
-        printf(console, 106, 0, char_array);
-        draw(console, window_width(), window_height());
-        if(key_state(SDLK_LEFT))
-          alpha = (alpha + 2) % 360;     // tourne vers la gauche
-        if(key_state(SDLK_RIGHT))
-          alpha = (alpha - 2) % 360;      // tourne vers la droite
+      std::string str = "En cours : NIVEAU " + std::to_string(niveau);
+      char char_array[str.size() + 5];
+      strcpy(char_array, str.c_str());
+      printf(console, 106, 0, char_array);
+      draw(console, window_width(), window_height());
+      if(key_state(SDLK_LEFT))
+        alpha = (alpha + 2) % 360;     // tourne vers la gauche
+      if(key_state(SDLK_RIGHT))
+        alpha = (alpha - 2) % 360;      // tourne vers la droite
       }
       else {
         sleep(1);
@@ -164,15 +178,25 @@ public:
       //   . ou, directement en utilisant openGL :
       //   int location= glGetUniformLocation(program, "color");
       //   glUniform4f(location, 1, 1, 0, 1);
+      m_tube.draw(program, /* use position */ true, /* use texcoord */true, /* use normal */ true, /* use color */ false, /* use material index*/ false);
+
+      glUseProgram(program_voiture);
+
+      Transform mvp_model = projection * view * m_transform_objet;
+      program_uniform(program_voiture, "mvpMatrix", mvp_model);
+      program_use_texture(program_voiture, "texture0", 0, texture_voiture);
 
       // go !
       // indiquer quels attributs de sommets du mesh sont necessaires a l'execution du shader.
       // tuto9_color.glsl n'utilise que position. les autres de servent a rien.
-      m_tube.draw(program, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false, /* use material index*/ false);
-      draw(objet, m_transform_objet,/*camera()*/ view, projection);
+      objet.draw(program_voiture, /* use position */ true, /* use texcoord */true, /* use normal */ false, /* use color */ false, /* use material index*/ false);
+
+      //draw(objet, m_transform_objet,/*camera()*/ view, projection);
 
 
       /////////////////////////////////////  Ajout d'obstacle /////////////////////////////////
+      glUseProgram(program_obstacle);
+
       std::vector<Transform> m_transform_obstacles;
       unsigned int i;
       for(i = 0; i < obstacles.size(); i++) {
@@ -183,7 +207,13 @@ public:
         Vector na_ob(R_ob(n_ob));
         Point pos_ob = p_ob + tube.getR() * na_ob;
         boxes[i].T = atlook(pos_ob, pos_ob + d_ob, na_ob)*Translation(0,0.05,0)*Scale(0.1,0.1,0.1);
-        draw(obstacle, boxes[i].T,/*camera()*/ view, projection);
+
+        Transform mvp_obstacle = projection * view * boxes[i].T;
+        program_uniform(program_obstacle, "mvpMatrix", mvp_obstacle);
+        program_use_texture(program_obstacle, "texture0", 0, texture_obstacle);
+
+        obstacle.draw(program_obstacle, /* use position */ true, /* use texcoord */true, /* use normal */ false, /* use color */ false, /* use material index*/ false);
+        //draw(obstacle, boxes[i].T,/*camera()*/ view, projection);
       }
 
       if (!finJeu) {
@@ -191,24 +221,43 @@ public:
         for(i = 0; i < boxes.size(); i++) {
           if(b1.collides(boxes[i])) {
             finJeu = true;
+            SDL_AudioSpec wav_spec;
+            Uint32 wav_length;
+            Uint8 *wav_buffer;
+            // Load the WAV //
+            if (SDL_LoadWAV("projet/data/crash.wav", &wav_spec, &wav_buffer, &wav_length) == NULL) {
+                fprintf(stderr, "Could not open test.wav: %s\n", SDL_GetError());
+            } else {
+                // Do stuff with the WAV data, and then... //
+                SDL_AudioDeviceID deviceId = SDL_OpenAudioDevice(NULL, 0, &wav_spec, NULL, 0);
+                int success = SDL_QueueAudio(deviceId, wav_buffer, wav_length);
+                SDL_PauseAudioDevice(deviceId, 0);
+                SDL_Delay(3000);
+                SDL_CloseAudioDevice(deviceId);
+                SDL_FreeWAV(wav_buffer);
+            }
           }
         }
       }
-
-
-
       return 1;
     }
-
 
 protected:
   Tube tube;
   Mesh m_tube;
   GLuint texture_route;
+  GLuint program;
+
   Mesh objet;
   Mesh obstacle;
-  GLuint texture;
-  GLuint program;
+
+  GLuint texture_voiture;
+  GLuint texture_obstacle;
+
+  GLuint program_voiture;
+  GLuint program_obstacle;
+
+
 
   int niveau;
   int alpha;
