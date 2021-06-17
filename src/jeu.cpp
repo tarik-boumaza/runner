@@ -11,11 +11,14 @@ public:
 
     int init( )
     {
+
+      srand(time(NULL));
+
       //Initialisation du tube
       tube.init();
       m_tube = tube.getMesh();
 
-      nb_obstacles = 30;
+      nb_obstacles = 35;
 
       //charge l'objet
       objet= read_mesh("projet/data/car.obj");
@@ -106,7 +109,7 @@ public:
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
       if (!finJeu){
-        indice += niveau + 4;
+        indice += niveau + 2;
         if (indice > tube.getNbPoints() - 2) {
           niveau += 1;
           indice = 1;
