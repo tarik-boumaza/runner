@@ -16,7 +16,7 @@ public:
       nb_obstacles = 30;
 
       //charge l'objet
-      objet= read_mesh("projet/data/cube.obj");
+      objet= read_mesh("projet/data/voiture.obj");
 
       // Initialisation du tableau d'obstacles
       initObstacles();
@@ -46,8 +46,11 @@ public:
       program = read_program("projet/src/shaders/tube_color.glsl");
       program_print_errors(program);
 
-      program_voiture = read_program("projet/src/shaders/voiture.glsl");
+      program_voiture = read_program("projet/src/shaders/texture.glsl");
       program_print_errors(program_voiture);
+
+      program_obstacle = read_program("projet/src/shaders/texture.glsl");
+      program_print_errors(program_obstacle);
       // etape 2 : creer une camera pour observer l'tube
       // construit l'englobant de l'tube, les extremites de sa boite englobante
       Point pmin, pmax;
@@ -61,6 +64,7 @@ public:
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
       texture_voiture = read_texture(0, "projet/data/couleur-voiture.jpg");
+      texture_obstacle =  read_texture(0, "projet/data/couleur_barriere.jpg");
 
 
       // regle le point de vue de la camera pour observer l'tube
@@ -119,7 +123,7 @@ public:
       Vector na(R(n));
       Point pos_objet = p + tube.getR() * na;
 
-      Transform m_transform_objet = atlook(pos_objet, pos_objet + d, na)*Translation(0,tube.getR()/6,0)*Scale(0.2,0.2,0.2);
+      Transform m_transform_objet = atlook(pos_objet, pos_objet + d, na)*Translation(0,tube.getR()/6,0)*Scale(2,2,2);
 
       Transform m_transform_camera = Translation(1.5*na)*Translation(50*d);
 
@@ -173,6 +177,8 @@ public:
 
 
       /////////////////////////////////////  Ajout d'obstacle /////////////////////////////////
+      glUseProgram(program_obstacle);
+
       std::vector<Transform> m_transform_obstacles;
       unsigned int i;
       for(i = 0; i < obstacles.size(); i++) {
@@ -183,7 +189,15 @@ public:
         Vector na_ob(R_ob(n_ob));
         Point pos_ob = p_ob + tube.getR() * na_ob;
         boxes[i].T = atlook(pos_ob, pos_ob + d_ob, na_ob)*Translation(0,0.05,0)*Scale(0.1,0.1,0.1);
-        draw(obstacle, boxes[i].T,/*camera()*/ view, projection);
+
+        Transform mvp_obstacle = projection * view * boxes[i].T;
+        program_uniform(program_obstacle, "mvpMatrix", mvp_obstacle);
+        program_use_texture(program_obstacle, "texture0", 0, texture_obstacle);
+
+        obstacle.draw(program_obstacle, /* use position */ true, /* use texcoord */true, /* use normal */ false, /* use color */ false, /* use material index*/ false);
+
+
+        //draw(obstacle, boxes[i].T,/*camera()*/ view, projection);
       }
 
       ////////////////////////////////// Collision ///////////////////////////
@@ -208,8 +222,13 @@ protected:
 
   Mesh objet;
   Mesh obstacle;
+
   GLuint texture_voiture;
+  GLuint texture_obstacle;
+
   GLuint program_voiture;
+  GLuint program_obstacle;
+
 
 
   int niveau;
