@@ -65,7 +65,7 @@ public:
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-      texture_voiture = read_texture(0, "projet/data/couleur_voiture.jpg");
+      texture_voiture = read_texture(0, "projet/data/bleu-peint.jpg");
       texture_obstacle =  read_texture(0, "projet/data/couleur_barriere.jpg");
 
 

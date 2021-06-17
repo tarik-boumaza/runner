@@ -13,7 +13,21 @@
 
 ### vroum-vroum
 
-*vroum-vroum* est un petit jeu de runner en 3D.
+#### Description
+
+- *vroum-vroum* est un petit jeu de runner en 3D.
+
+- Le joueur est placé dans l'espace, sur un tube. La voiture dont il a le contrôle avance alors sur ce tube, alors que le joueur a pour but d'éviter les différents obstacles sur sa route, en se déplaçant vers la gauche ou vers la droite (avec les touches associées sur le clavier).
+
+- À chaque tour, le joueur passe un niveau, et la vitesse de la voiture augmente, rendant plus difficile l'évitement des barrières rouges placées aléatoirement à chaque niveau.
+
+
+#### Implémentation
+
+- ***Tube*** :
+- ***Voiture*** :
+- ***Obstacles*** :
+- ***Niveau*** :
 
 
 ----------------------
