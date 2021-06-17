@@ -41,15 +41,18 @@ class Tube {
 
       //je construis les vecteurs orthogonaux à la courbe
       vecteur_orthogonal(points, orthogonaux);
+
       ///calcul rayon
       r = getNorme(orthogonaux[0]);  //rayon tube
+
       //génération des cercles
       generation_cercles(points, orthogonaux, cercles, norm);
 
+      //Initialisation de Mesh
       m_tube= Mesh(GL_TRIANGLES);
-      //génération et dessin des trianges
-      float longueur = longueur_tube(points);
-      dessine_triangles(m_tube, cercles, norm, longueur);
+
+      //génération et dessin des triangles
+      dessine_triangles(m_tube, cercles, norm, longueur_tube(points));
     }
 
     Point getPoint(const unsigned int i) {

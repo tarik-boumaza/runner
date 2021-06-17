@@ -118,7 +118,6 @@ static float longueur_tube(const std::vector<Point> & points) {
     longueur += getNorme(points[i], points[i+1]);
     i++;
   }
-  //longueur += getNormeZ(points[0],points[points.size()-1]);
   return longueur;
 }
 
@@ -138,7 +137,6 @@ static void dessine_triangles(Mesh& m, const std::vector<std::vector<Point>> & c
     for(j = 0; j < cercles[i].size() - 1; j++){
       ang = (float(j)*30)/360;
       angs = (float(j+1)*30)/360;
-      //std::cout<<lgp/lgt * repete << " , " << angs << std::endl;
       a = m.texcoord(lgp/lgt * repete, ang).normal(norm[i][j]).vertex(cercles[i][j]);
       b = m.texcoord(lgps/lgt * repete, ang).normal(norm[i+1][j]).vertex(cercles[i+1][j]);
       c = m.texcoord(lgps/lgt * repete, angs).normal(norm[i+1][j+1]).vertex(cercles[i+1][j+1]);

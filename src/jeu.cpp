@@ -14,29 +14,29 @@ public:
 
       srand(time(NULL));
 
-      //Initialisation du tube
+      // Initialisation du tube
       tube.init();
       m_tube = tube.getMesh();
 
-      nb_obstacles = 35;
-
-      //charge l'objet
+      // Charger la voiture
       objet= read_mesh("projet/data/car.obj");
 
       // Initialisation du tableau d'obstacles
+      nb_obstacles = 35;
       initObstacles();
 
-      //objet.default_color(Green()) ;
+      // Initialisation des boites englobantes
       Point pmin_box, pmax_box ;
       objet.bounds(pmin_box, pmax_box) ;
+      // Boite englobante de la voiture
       b1 = Box(pmin_box, pmax_box) ;
 
-      //charger les obstacles
+      // Charger les obstacles
       obstacle = read_mesh("projet/data/obstacle.obj");
       obstacle.default_color(Red());
 
+      // Boites englobantes des obstacles
       obstacle.bounds(pmin_box, pmax_box) ;
-
       for(unsigned int i = 0; i < nb_obstacles; i++) {
         boxes.push_back(Box(pmin_box, pmax_box));
       }
@@ -47,38 +47,39 @@ public:
       niveau = 1;
       indice = 10;
 
-      // etape 1 : creer le shader program
+      // Console pour affichage du niveau
+      console = create_text();
+
+
+      /*** Shader ***/
+
+      // Creer le shader program pour le tube
       program = read_program("projet/src/shaders/tube_color.glsl");
       program_print_errors(program);
 
+      // Creer le shader program pour appliquer une texture à la voiture
       program_voiture = read_program("projet/src/shaders/texture.glsl");
       program_print_errors(program_voiture);
 
+      // Creer le shader program pour appliquer une texture aux obstacles
       program_obstacle = read_program("projet/src/shaders/texture.glsl");
       program_print_errors(program_obstacle);
-      // etape 2 : creer une camera pour observer l'tube
-      // construit l'englobant de l'tube, les extremites de sa boite englobante
-      Point pmin, pmax;
-      m_tube.bounds(pmin, pmax);
 
 
-      console = create_text();
+      /*** Textures ***/
+
       texture_route = read_texture(0, "projet/data/route.jpg");
-
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
       texture_drapeau = read_texture(1, "projet/data/drapeau.jpg");
-
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
       texture_voiture = read_texture(0, "projet/data/bleu-peint.jpg");
+
       texture_obstacle =  read_texture(0, "projet/data/couleur_barriere.jpg");
 
-
-      // regle le point de vue de la camera pour observer l'tube
-      //camera().lookat(pmin, pmax);
 
       // etat openGL par defaut
       glClearColor(0.2f, 0.2f, 0.2f, 1.f);        // couleur par defaut de la fenetre
@@ -108,24 +109,30 @@ public:
 
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-      if (!finJeu){
+      if (!finJeu) {
         indice += niveau + 2;
         if (indice > tube.getNbPoints() - 2) {
           niveau += 1;
           indice = 1;
           alpha = 0;
         }
-      std::string str = "En cours : NIVEAU " + std::to_string(niveau);
-      char char_array[str.size() + 5];
-      strcpy(char_array, str.c_str());
-      printf(console, 106, 0, char_array);
-      draw(console, window_width(), window_height());
-      if(key_state(SDLK_LEFT))
-        alpha = (alpha + 2) % 360;     // tourne vers la gauche
-      if(key_state(SDLK_RIGHT))
-        alpha = (alpha - 2) % 360;      // tourne vers la droite
+
+        // Afichage du niveau
+        std::string str = "En cours : NIVEAU " + std::to_string(niveau);
+        char char_array[str.size() + 5];
+        strcpy(char_array, str.c_str());
+        printf(console, 106, 0, char_array);
+        draw(console, window_width(), window_height());
+
+        // Deplacement de la voiture (gauche ou droite)
+        if(key_state(SDLK_LEFT))
+          alpha = (alpha + 2) % 360;     // tourne vers la gauche
+        if(key_state(SDLK_RIGHT))
+          alpha = (alpha - 2) % 360;      // tourne vers la droite
       }
+
       else {
+        // Affichage texte de fin de partie
         std::string str = "                    ";
         char char_array[str.size() + 5];
         strcpy(char_array, str.c_str());
@@ -142,74 +149,55 @@ public:
         return 1;
       }
 
+      /**  Matrice de transformation de la voiture   **/
       Point p = tube.getPoint(indice);
       Vector d(tube.getPoint(indice+1), tube.getPoint(indice));
       Transform R = Rotation(d,alpha);
       Vector n(tube.getOrthogonal(indice));
       Vector na(R(n));
       Point pos_objet = p + tube.getR() * na;
-
       Transform m_transform_objet = atlook(pos_objet, pos_objet + d, na)*Translation(0,tube.getR()/6,0)*Scale(0.06,0.06,0.06);
+      b1.T = m_transform_objet; // ajout de la matrice de transformation à la boite englobante
 
-      Transform m_transform_camera = Translation(1.5*na)*Translation(50*d);
-
-      // etape 2 : dessiner tube avec le shader program
-      // configurer le pipeline
+      // Configurer le pipeline pour dessiner le tube
       glUseProgram(program);
 
-      // configurer le shader program
-      // . recuperer les transformations
-      /*Transform model= Identity();
-      Transform view= camera().view();
-      Transform projection= camera().projection(window_width(), window_height(), 45);*/
-
       Transform model= Identity();
+      Transform m_transform_camera = Translation(1.5*na)*Translation(50*d);
       Transform view= lookat(m_transform_camera(pos_objet),pos_objet, na);
       Transform projection= Perspective(90, (float) window_width() / (float) window_height(), .1f, 1000.f);
 
-      // . composer les transformations : model, view et projection
+      // Composer les transformations : model, view et projection
       Transform mvp= projection * view * model;
 
-      // . parametrer le shader program :
-      //   . transformation : la matrice declaree dans le vertex shader s'appelle mvpMatrix
       program_uniform(program, "mvpMatrix", mvp);
       program_uniform(program, "modelMatrix", model);
       program_uniform(program, "viewInvMatrix", Inverse(view));
-       //   . utilisation d'une texture configuree sur l'unite 0, le fragment shader declare "uniform sampler2D texture0;"
       program_use_texture(program, "texture0", 0, texture_route);
       program_use_texture(program, "texture1", 1, texture_drapeau);
 
-      //   . ou, directement en utilisant openGL :
-      //   int location= glGetUniformLocation(program, "mvpMatrix");
-      //   glUniformMatrix4fv(location, 1, GL_TRUE, mvp.buffer());
-      // . parametres "supplementaires" :
-      //   . couleur des pixels, cf la declaration 'uniform vec4 color;' dans le fragment shader
-      //program_uniform(program, "color", vec4(1, 1, 0, 1));
-      //   . ou, directement en utilisant openGL :
-      //   int location= glGetUniformLocation(program, "color");
-      //   glUniform4f(location, 1, 1, 0, 1);
       m_tube.draw(program, /* use position */ true, /* use texcoord */true, /* use normal */ true, /* use color */ false, /* use material index*/ false);
 
+
+      // Configurer le pipeline pour dessiner la voiture
       glUseProgram(program_voiture);
 
       Transform mvp_model = projection * view * m_transform_objet;
       program_uniform(program_voiture, "mvpMatrix", mvp_model);
       program_use_texture(program_voiture, "texture0", 0, texture_voiture);
 
-      // go !
-      // indiquer quels attributs de sommets du mesh sont necessaires a l'execution du shader.
-      // tuto9_color.glsl n'utilise que position. les autres de servent a rien.
       objet.draw(program_voiture, /* use position */ true, /* use texcoord */true, /* use normal */ false, /* use color */ false, /* use material index*/ true);
 
-      //draw(objet, m_transform_objet,/*camera()*/ view, projection);
 
+      /**  Gestion des obstacles  **/
 
-      /////////////////////////////////////  Ajout d'obstacle /////////////////////////////////
+      // Configurer le pipeline pour dessiner les obstacles
       glUseProgram(program_obstacle);
 
-      std::vector<Transform> m_transform_obstacles;
       unsigned int i;
       for(i = 0; i < obstacles.size(); i++) {
+
+        /**  Matrice de transformation de l'obstacle  **/
         Point p_ob = tube.getPoint(obstacles[i]);
         Vector d_ob(tube.getPoint(obstacles[i]), tube.getPoint(obstacles[i]+1));
         Transform R_ob = Rotation(d_ob, angles[i]);
@@ -223,11 +211,10 @@ public:
         program_use_texture(program_obstacle, "texture0", 0, texture_obstacle);
 
         obstacle.draw(program_obstacle, /* use position */ true, /* use texcoord */true, /* use normal */ false, /* use color */ false, /* use material index*/ false);
-        //draw(obstacle, boxes[i].T,/*camera()*/ view, projection);
       }
 
       if (!finJeu) {
-        b1.T = m_transform_objet ;
+        /** Gestion des collisions **/
         for(i = 0; i < boxes.size(); i++) {
           if(b1.collides(boxes[i])) {
             finJeu = true;
@@ -241,21 +228,16 @@ public:
 protected:
   Tube tube;
   Mesh m_tube;
-  GLuint texture_drapeau;
-  GLuint texture_route;
-  GLuint program;
-
   Mesh objet;
   Mesh obstacle;
 
+  GLuint texture_drapeau;
+  GLuint texture_route;
+  GLuint program;
   GLuint texture_voiture;
   GLuint texture_obstacle;
-
   GLuint program_voiture;
   GLuint program_obstacle;
-
-
-
   int niveau;
   int alpha;
   unsigned indice;
@@ -271,6 +253,7 @@ protected:
 
 private:
 
+  // Génération aléatoire de la position des obstacles sur le tube
   void initObstacles() {
     obstacles.clear();
     angles.clear();
