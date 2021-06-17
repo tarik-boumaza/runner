@@ -18,7 +18,7 @@ public:
       nb_obstacles = 30;
 
       //charge l'objet
-      objet= read_mesh("projet/data/voiture.obj");
+      objet= read_mesh("projet/data/car.obj");
 
       // Initialisation du tableau d'obstacles
       initObstacles();
@@ -65,7 +65,7 @@ public:
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-      texture_voiture = read_texture(0, "projet/data/couleur-voiture.jpg");
+      texture_voiture = read_texture(0, "projet/data/couleur_voiture.jpg");
       texture_obstacle =  read_texture(0, "projet/data/couleur_barriere.jpg");
 
 
@@ -117,7 +117,6 @@ public:
         alpha = (alpha - 2) % 360;      // tourne vers la droite
       }
       else {
-        sleep(1);
         std::string str = "                    ";
         char char_array[str.size() + 5];
         strcpy(char_array, str.c_str());
@@ -141,7 +140,7 @@ public:
       Vector na(R(n));
       Point pos_objet = p + tube.getR() * na;
 
-      Transform m_transform_objet = atlook(pos_objet, pos_objet + d, na)*Translation(0,tube.getR()/6,0)*Scale(2,2,2);
+      Transform m_transform_objet = atlook(pos_objet, pos_objet + d, na)*Translation(0,tube.getR()/6,0)*Scale(0.06,0.06,0.06);
 
       Transform m_transform_camera = Translation(1.5*na)*Translation(50*d);
 
@@ -189,7 +188,7 @@ public:
       // go !
       // indiquer quels attributs de sommets du mesh sont necessaires a l'execution du shader.
       // tuto9_color.glsl n'utilise que position. les autres de servent a rien.
-      objet.draw(program_voiture, /* use position */ true, /* use texcoord */true, /* use normal */ false, /* use color */ false, /* use material index*/ false);
+      objet.draw(program_voiture, /* use position */ true, /* use texcoord */true, /* use normal */ false, /* use color */ false, /* use material index*/ true);
 
       //draw(objet, m_transform_objet,/*camera()*/ view, projection);
 
