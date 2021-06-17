@@ -16,7 +16,7 @@ public:
       nb_obstacles = 30;
 
       //charge l'objet
-      objet= read_mesh("projet/data/voiture.obj");
+      objet= read_mesh("projet/data/cube.obj");
 
       // Initialisation du tableau d'obstacles
       initObstacles();
@@ -55,7 +55,11 @@ public:
 
 
       console = create_text();
-      texture_route = read_texture(0, "projet/data/road.png");
+      texture_route = read_texture(0, "projet/data/route3-min.jpg");
+
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
       texture_voiture = read_texture(0, "projet/data/couleur-voiture.jpg");
 
 
@@ -92,7 +96,7 @@ public:
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
       if (!finJeu){
-        indice += niveau + 2;
+        indice += niveau + 4;
         if (indice > tube.getNbPoints() - 2) {
           niveau += 1;
           indice = 1;
@@ -115,7 +119,7 @@ public:
       Vector na(R(n));
       Point pos_objet = p + tube.getR() * na;
 
-      Transform m_transform_objet = atlook(pos_objet, pos_objet + d, na)*Translation(0,tube.getR()/6,0)*Scale(2,2,2);
+      Transform m_transform_objet = atlook(pos_objet, pos_objet + d, na)*Translation(0,tube.getR()/6,0)*Scale(0.2,0.2,0.2);
 
       Transform m_transform_camera = Translation(1.5*na)*Translation(50*d);
 

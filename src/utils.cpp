@@ -59,11 +59,11 @@ static void vecteur_orthogonal (std::vector<Point> & points, std::vector<Vector>
 
 static void points_cercle(Point & p1, Point & p2, Vector & v, std::vector<Point> & pc, std::vector<Vector> & nm){
   Vector axe(p1,p2);
-  float angle = 30.0;
+  float angle = 10.0;
   Transform tr = Rotation(axe, angle);
   Transform tt;
   Point p, pt;
-  for(int i = 0; i < 12; i++){
+  for(int i = 0; i < 36; i++){
     v = tr(v);
     tt = Translation(v);
     p = Point (p1.x-v.x, p1.y-v.y, p1.z-v.z);
@@ -124,6 +124,7 @@ static float longueur_tube(const std::vector<Point> & points) {
 
 static void dessine_triangles(Mesh& m, const std::vector<std::vector<Point>> & cercles, const std::vector<std::vector<Vector>> & norm, const float & lgt){
   unsigned int i, j,a, b, c, d, la, lb, lc, ld;
+  unsigned int repete = 15;
   float lgp = 0.0;
   float lgps = 0.0;
   float ang,angs;
@@ -137,20 +138,20 @@ static void dessine_triangles(Mesh& m, const std::vector<std::vector<Point>> & c
     for(j = 0; j < cercles[i].size() - 1; j++){
       ang = (float(j)*30)/360;
       angs = (float(j+1)*30)/360;
-      std::cout<<lgp/lgt << " , " << angs << std::endl;
-      a = m.texcoord(lgp/lgt, ang).normal(norm[i][j]).vertex(cercles[i][j]);
-      b = m.texcoord(lgps/lgt, ang).normal(norm[i+1][j]).vertex(cercles[i+1][j]);
-      c = m.texcoord(lgps/lgt, angs).normal(norm[i+1][j+1]).vertex(cercles[i+1][j+1]);
-      d = m.texcoord(lgp/lgt, angs).normal(norm[i][j+1]).vertex(cercles[i][j+1]);
+      std::cout<<lgp/lgt * repete << " , " << angs << std::endl;
+      a = m.texcoord(lgp/lgt * repete, ang).normal(norm[i][j]).vertex(cercles[i][j]);
+      b = m.texcoord(lgps/lgt * repete, ang).normal(norm[i+1][j]).vertex(cercles[i+1][j]);
+      c = m.texcoord(lgps/lgt * repete, angs).normal(norm[i+1][j+1]).vertex(cercles[i+1][j+1]);
+      d = m.texcoord(lgp/lgt * repete, angs).normal(norm[i][j+1]).vertex(cercles[i][j+1]);
 
       m.triangle(a,c,b);
       m.triangle(a,d,c);
 
       if(j == cercles[i].size() - 2){
-        la = m.texcoord(lgp/lgt, angs).normal(norm[i][j+1]).vertex(cercles[i][j+1]);
-        lb = m.texcoord(lgps/lgt, angs).normal(norm[i+1][j+1]).vertex(cercles[i+1][j+1]);
-        lc = m.texcoord(lgps/lgt, 0).normal(norm[i+1][0]).vertex(cercles[i+1][0]);
-        ld = m.texcoord(lgp/lgt, 0).normal(norm[i][0]).vertex(cercles[i][0]);
+        la = m.texcoord(lgp/lgt * repete, angs).normal(norm[i][j+1]).vertex(cercles[i][j+1]);
+        lb = m.texcoord(lgps/lgt * repete, angs).normal(norm[i+1][j+1]).vertex(cercles[i+1][j+1]);
+        lc = m.texcoord(lgps/lgt * repete, 0).normal(norm[i+1][0]).vertex(cercles[i+1][0]);
+        ld = m.texcoord(lgp/lgt * repete, 0).normal(norm[i][0]).vertex(cercles[i][0]);
 
         m.triangle(la,lc,lb);
         m.triangle(la,ld,lc);
