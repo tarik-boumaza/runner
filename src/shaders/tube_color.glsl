@@ -54,7 +54,7 @@ void main( )
 
     //fragment_color= vec4(color, 1);
 
-    //vec4 color= texture(texture0, vertex_texcoord);
-    fragment_color= vec4(0, vertex_texcoord.y, 0,1);
+    vec4 color= texture(texture0, vertex_texcoord);
+    fragment_color= color;
 }
 #endif

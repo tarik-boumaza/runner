@@ -43,9 +43,11 @@ public:
       indice = 10;
 
       // etape 1 : creer le shader program
-      program= read_program("projet/src/shaders/tube_color.glsl");
+      program = read_program("projet/src/shaders/tube_color.glsl");
       program_print_errors(program);
 
+      program_voiture = read_program("projet/src/shaders/voiture.glsl");
+      program_print_errors(program_voiture);
       // etape 2 : creer une camera pour observer l'tube
       // construit l'englobant de l'tube, les extremites de sa boite englobante
       Point pmin, pmax;
@@ -54,6 +56,7 @@ public:
 
       console = create_text();
       texture_route = read_texture(0, "projet/data/road.png");
+      texture_voiture = read_texture(0, "projet/data/couleur-voiture.jpg");
 
 
       // regle le point de vue de la camera pour observer l'tube
@@ -77,6 +80,8 @@ public:
         objet.release();
         release_text(console);
         glDeleteTextures(1, &texture_route);
+        glDeleteTextures(1, &texture_voiture);
+
         return 0;
     }
 
@@ -147,12 +152,20 @@ public:
       //   . ou, directement en utilisant openGL :
       //   int location= glGetUniformLocation(program, "color");
       //   glUniform4f(location, 1, 1, 0, 1);
+      m_tube.draw(program, /* use position */ true, /* use texcoord */true, /* use normal */ true, /* use color */ false, /* use material index*/ false);
+
+      glUseProgram(program_voiture);
+
+      Transform mvp_model = projection * view * m_transform_objet;
+      program_uniform(program_voiture, "mvpMatrix", mvp_model);
+      program_use_texture(program_voiture, "texture0", 0, texture_voiture);
 
       // go !
       // indiquer quels attributs de sommets du mesh sont necessaires a l'execution du shader.
       // tuto9_color.glsl n'utilise que position. les autres de servent a rien.
-      m_tube.draw(program, /* use position */ true, /* use texcoord */true, /* use normal */ true, /* use color */ false, /* use material index*/ false);
-      draw(objet, m_transform_objet,/*camera()*/ view, projection);
+      objet.draw(program_voiture, /* use position */ true, /* use texcoord */true, /* use normal */ false, /* use color */ false, /* use material index*/ false);
+
+      //draw(objet, m_transform_objet,/*camera()*/ view, projection);
 
 
       /////////////////////////////////////  Ajout d'obstacle /////////////////////////////////
@@ -187,10 +200,13 @@ protected:
   Tube tube;
   Mesh m_tube;
   GLuint texture_route;
+  GLuint program;
+
   Mesh objet;
   Mesh obstacle;
-  GLuint texture;
-  GLuint program;
+  GLuint texture_voiture;
+  GLuint program_voiture;
+
 
   int niveau;
   int alpha;

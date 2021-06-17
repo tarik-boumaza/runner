@@ -137,7 +137,7 @@ static void dessine_triangles(Mesh& m, const std::vector<std::vector<Point>> & c
     for(j = 0; j < cercles[i].size() - 1; j++){
       ang = (float(j)*30)/360;
       angs = (float(j+1)*30)/360;
-      std::cout<<lgp/lgt << " , " << ang << std::endl;
+      std::cout<<lgp/lgt << " , " << angs << std::endl;
       a = m.texcoord(lgp/lgt, ang).normal(norm[i][j]).vertex(cercles[i][j]);
       b = m.texcoord(lgps/lgt, ang).normal(norm[i+1][j]).vertex(cercles[i+1][j]);
       c = m.texcoord(lgps/lgt, angs).normal(norm[i+1][j+1]).vertex(cercles[i+1][j+1]);
