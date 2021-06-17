@@ -30,11 +30,14 @@ in vec3 n;
 
 uniform mat4 viewInvMatrix;
 uniform sampler2D texture0;
+uniform sampler2D texture1;
+
 
 const vec3 emission= vec3(1);
 const float k= 1;
 
 out vec4 fragment_color;
+
 void main( )
 {
     vec3 camera= vec3(viewInvMatrix * vec4(0, 0, 0, 1));        // position de la camera dans le repere du monde
@@ -49,9 +52,12 @@ void main( )
     // brdf
     float fr= k;
     vec4 brdf= vec4(emission * fr * cos_theta, 1);
-
-
-    vec4 color= texture(texture0, vertex_texcoord);
+    vec4 color = vec4(0);
+    if ((vertex_texcoord.x >= 0) && (vertex_texcoord.x <= 1)) {
+      color= texture(texture1, vertex_texcoord);
+    } else {
+      color= texture(texture0, vertex_texcoord);
+    }
     fragment_color= color*brdf;
 }
 #endif
