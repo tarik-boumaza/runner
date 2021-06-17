@@ -1,6 +1,8 @@
 #include "tube.cpp"
 #include "texture.h"
 
+#include <unistd.h>
+
 class Jeu : public AppCamera
 {
 public:
@@ -73,8 +75,8 @@ public:
         release_program(program);
         m_tube.release();
         objet.release();
-        release_text(console);
         glDeleteTextures(1, &texture_route);
+        release_text(console);
         return 0;
     }
 
@@ -90,15 +92,32 @@ public:
           niveau += 1;
           indice = 1;
         }
-        std::string str = "Niveau " + std::to_string(niveau);
+        std::string str = "En cours : NIVEAU " + std::to_string(niveau);
         char char_array[str.size() + 5];
         strcpy(char_array, str.c_str());
-        printf(console, 0, 0, char_array);
+        printf(console, 106, 0, char_array);
         draw(console, window_width(), window_height());
         if(key_state(SDLK_LEFT))
           alpha = (alpha + 2) % 360;     // tourne vers la gauche
         if(key_state(SDLK_RIGHT))
           alpha = (alpha - 2) % 360;      // tourne vers la droite
+      }
+      else {
+        sleep(1);
+        std::string str = "                    ";
+        char char_array[str.size() + 5];
+        strcpy(char_array, str.c_str());
+        printf(console, 106, 0, char_array);
+        str = "Perdu : NIVEAU " + std::to_string(niveau);
+        strcpy(char_array, str.c_str());
+        printf(console, 55, 11, char_array);
+        if (niveau == 1) {
+          str = "pas de panique, personne ne le saura...";
+          strcpy(char_array, str.c_str());
+          printf(console, 0, 0, char_array);
+        }
+        draw(console, window_width(), window_height());
+        return 1;
       }
 
       Point p = tube.getPoint(indice);
@@ -149,7 +168,7 @@ public:
       // go !
       // indiquer quels attributs de sommets du mesh sont necessaires a l'execution du shader.
       // tuto9_color.glsl n'utilise que position. les autres de servent a rien.
-      m_tube.draw(program, /* use position */ true, /* use texcoord */ false, /* use normal */ true, /* use color */ false, /* use material index*/ false);
+      m_tube.draw(program, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false, /* use material index*/ false);
       draw(objet, m_transform_objet,/*camera()*/ view, projection);
 
 
@@ -167,7 +186,6 @@ public:
         draw(obstacle, boxes[i].T,/*camera()*/ view, projection);
       }
 
-      ////////////////////////////////// Collision ///////////////////////////
       if (!finJeu) {
         b1.T = m_transform_objet ;
         for(i = 0; i < boxes.size(); i++) {
@@ -176,6 +194,8 @@ public:
           }
         }
       }
+
+
 
       return 1;
     }
