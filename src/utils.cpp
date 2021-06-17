@@ -124,7 +124,7 @@ static float longueur_tube(const std::vector<Point> & points) {
 
 static void dessine_triangles(Mesh& m, const std::vector<std::vector<Point>> & cercles, const std::vector<std::vector<Vector>> & norm, const float & lgt){
   unsigned int i, j,a, b, c, d, la, lb, lc, ld;
-  unsigned int repete = 15;
+  unsigned int repete = 100;
   float lgp = 0.0;
   float lgps = 0.0;
   float ang,angs;

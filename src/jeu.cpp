@@ -60,7 +60,12 @@ public:
 
 
       console = create_text();
-      texture_route = read_texture(0, "projet/data/route3-min.jpg");
+      texture_route = read_texture(0, "projet/data/route.jpg");
+
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+      texture_drapeau = read_texture(1, "projet/data/drapeau.jpg");
 
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -105,6 +110,7 @@ public:
         if (indice > tube.getNbPoints() - 2) {
           niveau += 1;
           indice = 1;
+          alpha = 0;
         }
       std::string str = "En cours : NIVEAU " + std::to_string(niveau);
       char char_array[str.size() + 5];
@@ -168,6 +174,8 @@ public:
       program_uniform(program, "viewInvMatrix", Inverse(view));
        //   . utilisation d'une texture configuree sur l'unite 0, le fragment shader declare "uniform sampler2D texture0;"
       program_use_texture(program, "texture0", 0, texture_route);
+      program_use_texture(program, "texture1", 1, texture_drapeau);
+
       //   . ou, directement en utilisant openGL :
       //   int location= glGetUniformLocation(program, "mvpMatrix");
       //   glUniformMatrix4fv(location, 1, GL_TRUE, mvp.buffer());
@@ -230,6 +238,7 @@ public:
 protected:
   Tube tube;
   Mesh m_tube;
+  GLuint texture_drapeau;
   GLuint texture_route;
   GLuint program;
 
